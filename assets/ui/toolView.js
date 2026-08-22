@@ -22,7 +22,7 @@ export function renderCompareRows(results) {
         '<td>' + vcRangeLabel(r.drillMat) + '</td>' +
         '<td>' + r.vc + ' m/min</td>' +
         '<td class="rpm-cell">' + formatNumber(r.rpm, 0) + '</td>' +
-        '<td>' + formatNumber(r.f, 2) + ' mm/rev</td>' +
+        '<td>' + formatNumber(r.f, 3) + ' mm/rev</td>' +
         '<td class="feed-cell">' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
         '</tr>'
     )

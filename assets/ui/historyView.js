@@ -10,7 +10,7 @@ function renderRecordRows(results) {
         '<tr>' +
         '<td>' + r.drillMatLabel + '</td>' +
         '<td>' + formatNumber(r.rpm, 0) + ' RPM</td>' +
-        '<td>' + formatNumber(r.f, 2) + ' mm/rev · ' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
+        '<td>' + formatNumber(r.f, 3) + ' mm/rev · ' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
         '</tr>'
     )
     .join('');
