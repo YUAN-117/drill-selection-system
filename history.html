@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>歷史紀錄 - 鑽頭選擇系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <span class="brand">鑽頭選擇系統</span>
+  <a href="index.html">首頁</a>
+  <a href="tool.html">鑽頭選擇</a>
+  <a href="history.html" aria-current="page">歷史紀錄</a>
+</nav>
+
+<div class="wrap">
+  <header class="page">
+    <h1>歷史紀錄</h1>
+    <p>只保存在這個瀏覽器裡,換一台電腦或清除瀏覽器資料就看不到了</p>
+  </header>
+
+  <section class="panel" aria-label="歷史紀錄清單">
+    <div class="confirm-bar" id="confirmBar" style="display:none;">
+      確定要清空全部記錄嗎?此操作無法復原。
+      <button class="btn-danger-ghost" id="confirmClearBtn">確定清空</button>
+      <button class="btn-ghost" id="cancelClearBtn">取消</button>
+    </div>
+
+    <div class="history-list" id="historyList"></div>
+
+    <div class="actions" style="justify-content: flex-start; margin-top: 16px;">
+      <button class="btn-ghost" id="clearAllBtn">清空全部</button>
+    </div>
+  </section>
+</div>
+
+<script type="module" src="assets/ui/historyController.js"></script>
+</body>
+</html>
