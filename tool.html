@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鑽頭選擇與計算 - 鑽頭選擇系統</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<nav class="site-nav">
+  <span class="brand">鑽頭選擇系統</span>
+  <a href="index.html">首頁</a>
+  <a href="tool.html" aria-current="page">鑽頭選擇</a>
+  <a href="history.html">歷史紀錄</a>
+</nav>
+
+<div class="wrap">
+  <header class="page">
+    <h1>鑽頭選擇與計算</h1>
+    <p>輸入鑽頭直徑與鋁合金材質,自動比較三種鑽頭材質的建議轉速與進給量</p>
+  </header>
+
+  <section class="panel" aria-label="輸入與比較結果">
+    <div class="field-grid">
+      <div class="field">
+        <label for="diameter">鑽頭直徑 (mm)</label>
+        <input type="number" id="diameter" min="1" max="32" step="0.1" placeholder="例如 8" inputmode="decimal" list="drillSizeList">
+        <datalist id="drillSizeList"></datalist>
+        <div class="hint" id="diaHint">&nbsp;</div>
+      </div>
+      <div class="field">
+        <label for="alloy">鋁合金材質</label>
+        <select id="alloy">
+          <option value="6061">6061</option>
+          <option value="7075">7075</option>
+          <option value="a380">A380 壓鑄鋁</option>
+          <option value="custom">自訂鋁合金</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="compare-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>鑽頭材質</th>
+            <th>Vc 常用範圍</th>
+            <th>採用 Vc</th>
+            <th>RPM</th>
+            <th>進給量 f</th>
+            <th>進給速度</th>
+          </tr>
+        </thead>
+        <tbody id="compareBody">
+          <tr><td colspan="6" style="color: var(--readout-text-dim); padding: 20px 14px;">輸入直徑後顯示比較結果</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="params-line" id="guidanceLine">選擇材質並輸入直徑後,顯示選用原則</div>
+
+    <div class="actions">
+      <button class="btn-primary" id="addBtn" disabled>加入記錄</button>
+    </div>
+  </section>
+
+  <footer class="note">
+    直徑僅接受市售鑽頭常見規格(1.0–13.0mm 每 0.1mm、13.5–20.0mm 每 0.5mm、21–32mm 每 1mm,依 DIN 338 麻花鑽常見尺寸系列),輸入非標準值會自動對應到最接近的規格。Vc、f 為經驗常用範圍,非精確固定值,進給量僅依直徑分段,不因鑽頭材質而異。實際仍應依刀具廠商規格與機台狀況微調。目前不考慮孔深/深徑比、貫穿孔或沉頭孔。記錄僅保存在本機瀏覽器(localStorage)。
+  </footer>
+</div>
+
+<script type="module" src="assets/ui/toolController.js"></script>
+</body>
+</html>
