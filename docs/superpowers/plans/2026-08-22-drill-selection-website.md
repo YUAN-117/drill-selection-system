@@ -4,7 +4,25 @@
 
 **Goal:** Build a 3-page static website (home, drill-selection tool, history) that recommends and compares HSS / carbide / coated-carbide drill parameters for aluminum drilling, replacing the single-page `drill-console.html` calculator.
 
-**Architecture:** Pure ES-module logic in `assets/app.js` (diameter normalization, Vc/RPM/feed calculation, history storage) tested with Node's built-in test runner; thin DOM-wiring scripts (`assets/tool.js`, `assets/history.js`) that import that logic and are verified manually in a browser; shared `assets/style.css` for the visual design; no backend, no build step, no framework.
+**Architecture:** Responsibilities are split into separate files/folders so a change to one layer can't silently break another:
+
+```
+assets/
+  core/           input rules + calculation logic (pure, unit-tested)
+    diameter.js       standard drill sizes + diameter normalization ("輸入規則")
+    materials.js       drill materials, alloys, Vc/RPM/feed calculation ("計算/排序邏輯")
+    format.js           number formatting
+  data/           persistence (pure, unit-tested, storage is dependency-injected)
+    historyStore.js    localStorage read/write for history records ("資料存取")
+  ui/             DOM layer
+    toolView.js         pure functions: data -> HTML strings for the tool page ("畫面")
+    toolController.js    DOM event wiring for tool.html, no business logic ("操作")
+    historyView.js       pure functions: data -> HTML strings for the history page ("畫面")
+    historyController.js DOM event wiring for history.html, no business logic ("操作")
+  style.css        shared visual design
+```
+
+`core/` and `data/` know nothing about the DOM and are covered by Node unit tests. `ui/*View.js` files are also pure (return HTML strings, no `document` access) and are unit-tested. `ui/*Controller.js` files are the only place that touches `document`/`localStorage` directly — they just wire events to the layers above and are verified manually in a browser. This means: changing the visual layout only touches `*View.js`, changing the calculation only touches `core/`, changing storage only touches `data/`.
 
 **Tech Stack:** Plain HTML/CSS/JavaScript (ES modules), Node.js built-in test runner (`node --test`), Google Fonts (Noto Sans TC + IBM Plex Mono), deployed later to GitHub Pages (separate step, not part of this plan).
 
@@ -18,7 +36,8 @@
 - No user-adjustable Vc/f sliders — these are computed, read-only reference values.
 - Feed rate `f` depends only on diameter, not drill material (intentional simplification carried over from the spec).
 - No login, no backend, no shared/cross-user data — history is per-browser `localStorage` only.
-- No automated DOM/UI tests — pure logic gets unit tests; UI is verified manually in a browser.
+- Every file has one responsibility per the folder layout above — do not add calculation logic to a `*Controller.js` or `*View.js` file, and do not touch `document`/`localStorage` from `core/`.
+- No automated DOM/interaction tests — `*Controller.js` wiring is verified manually in a browser. Everything else (`core/`, `data/`, `*View.js`) is pure and unit-tested.
 - Every color in `assets/style.css` must be defined for both light and dark themes (reuse the token structure already validated in `drill-console.html`).
 
 ---
@@ -28,10 +47,10 @@
 **Files:**
 - Create: `package.json`
 - Create: `.gitignore`
-- Create: `assets/` (empty directory, populated by later tasks)
+- Create: `assets/core/`, `assets/data/`, `assets/ui/` (empty directories, populated by later tasks)
 
 **Interfaces:**
-- Produces: `npm test` runs `node --test` (auto-discovers `**/*.test.js`) for all later tasks' test files.
+- Produces: `npm test` runs `node --test` (auto-discovers every `**/*.test.js`) for all later tasks' test files.
 
 - [ ] **Step 1: Create `package.json`**
 
@@ -53,10 +72,10 @@
 node_modules/
 ```
 
-- [ ] **Step 3: Create the `assets/` directory**
+- [ ] **Step 3: Create the directories**
 
 ```bash
-mkdir assets
+mkdir -p assets/core assets/data assets/ui
 ```
 
 - [ ] **Step 4: Commit**
@@ -68,23 +87,23 @@ git commit -m "chore: scaffold drill selection website project"
 
 ---
 
-### Task 2: Diameter normalization and feed-band lookup
+### Task 2: `core/diameter.js` — standard sizes and diameter normalization (輸入規則)
 
 **Files:**
-- Create: `assets/app.js`
-- Create: `assets/app.test.js`
+- Create: `assets/core/diameter.js`
+- Create: `assets/core/diameter.test.js`
 
 **Interfaces:**
-- Produces: `STANDARD_SIZES` (array of numbers), `nearestStandardDiameter(raw: number): number`, `FEED_BANDS` (array of `{dmax, fmin, fmax, def}`), `getFeedBand(diameter: number): {dmax, fmin, fmax, def}`.
+- Produces: `STANDARD_SIZES` (array of numbers), `buildStandardSizes(): number[]`, `nearestStandardDiameter(raw: number): number`.
 
 - [ ] **Step 1: Write the failing tests**
 
-Create `assets/app.test.js`:
+Create `assets/core/diameter.test.js`:
 
 ```js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { STANDARD_SIZES, nearestStandardDiameter, getFeedBand } from './app.js';
+import { STANDARD_SIZES, nearestStandardDiameter } from './diameter.js';
 
 test('nearestStandardDiameter returns the exact value when already standard', () => {
   assert.equal(nearestStandardDiameter(8), 8);
@@ -106,24 +125,16 @@ test('STANDARD_SIZES spans from 1.0mm to 32.0mm', () => {
   assert.equal(STANDARD_SIZES[0], 1);
   assert.equal(STANDARD_SIZES[STANDARD_SIZES.length - 1], 32);
 });
-
-test('getFeedBand returns the 3-6mm band for 3.7mm', () => {
-  assert.deepEqual(getFeedBand(3.7), { dmax: 6, fmin: 0.05, fmax: 0.10, def: 0.075 });
-});
-
-test('getFeedBand returns the 6-10mm band for 8mm', () => {
-  assert.deepEqual(getFeedBand(8), { dmax: 10, fmin: 0.10, fmax: 0.15, def: 0.125 });
-});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test`
-Expected: FAIL — `assets/app.js` does not exist yet (module not found).
+Expected: FAIL — `assets/core/diameter.js` does not exist yet (module not found).
 
 - [ ] **Step 3: Write the implementation**
 
-Create `assets/app.js`:
+Create `assets/core/diameter.js`:
 
 ```js
 // Standard metric twist drill sizes (DIN 338 series):
@@ -155,60 +166,54 @@ export function nearestStandardDiameter(raw) {
   }
   return best;
 }
-
-export const FEED_BANDS = [
-  { dmax: 3, fmin: 0.03, fmax: 0.06, def: 0.045 },
-  { dmax: 6, fmin: 0.05, fmax: 0.10, def: 0.075 },
-  { dmax: 10, fmin: 0.10, fmax: 0.15, def: 0.125 },
-  { dmax: 15, fmin: 0.15, fmax: 0.25, def: 0.20 },
-  { dmax: 20, fmin: 0.20, fmax: 0.30, def: 0.25 },
-  { dmax: Infinity, fmin: 0.25, fmax: 0.35, def: 0.30 }
-];
-
-export function getFeedBand(diameter) {
-  for (const band of FEED_BANDS) {
-    if (diameter <= band.dmax) return band;
-  }
-  return FEED_BANDS[FEED_BANDS.length - 1];
-}
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
 
 Run: `npm test`
-Expected: PASS (7 tests)
+Expected: PASS (5 tests)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add assets/app.js assets/app.test.js
-git commit -m "feat: add diameter normalization and feed-band lookup logic"
+git add assets/core/diameter.js assets/core/diameter.test.js
+git commit -m "feat: add standard drill size table and diameter normalization"
 ```
 
 ---
 
-### Task 3: Material Vc / RPM / feed-rate calculation
+### Task 3: `core/materials.js` — Vc / RPM / feed-rate calculation (計算/排序邏輯)
 
 **Files:**
-- Modify: `assets/app.js`
-- Modify: `assets/app.test.js`
+- Create: `assets/core/materials.js`
+- Create: `assets/core/materials.test.js`
 
 **Interfaces:**
-- Consumes: `nearestStandardDiameter`, `getFeedBand` from Task 2.
-- Produces: `DRILL_MATERIALS` (array of `{key, label, vcMin, vcMax}`), `ALLOY_BIAS` (object), `ALLOY_LABELS` (object), `computeVc(drillMatKey: string, alloyKey: string): number`, `computeResultForMaterial(diameter: number, alloyKey: string, drillMatKey: string): {drillMat, drillMatLabel, vc, f, rpm, feedRate}`, `computeAllResults(rawDiameter: number, alloyKey: string): {diameter: number, results: Array}`, `formatNumber(n: number, digits: number): string`.
+- Consumes: `nearestStandardDiameter` from Task 2 (`../core/diameter.js` when imported from another folder, `./diameter.js` from within `core/`).
+- Produces: `FEED_BANDS` (array of `{dmax, fmin, fmax, def}`), `getFeedBand(diameter: number): {dmax, fmin, fmax, def}`, `DRILL_MATERIALS` (array of `{key, label, vcMin, vcMax}`, fixed display order: hss, carbide, coated), `ALLOY_BIAS` (object), `ALLOY_LABELS` (object), `computeVc(drillMatKey: string, alloyKey: string): number`, `computeResultForMaterial(diameter: number, alloyKey: string, drillMatKey: string): {drillMat, drillMatLabel, vc, f, rpm, feedRate}`, `computeAllResults(rawDiameter: number, alloyKey: string): {diameter: number, results: Array}`.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `assets/app.test.js`:
+Create `assets/core/materials.test.js`:
 
 ```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
 import {
+  getFeedBand,
   computeVc,
   computeResultForMaterial,
   computeAllResults,
-  formatNumber,
   DRILL_MATERIALS
-} from './app.js';
+} from './materials.js';
+
+test('getFeedBand returns the 3-6mm band for 3.7mm', () => {
+  assert.deepEqual(getFeedBand(3.7), { dmax: 6, fmin: 0.05, fmax: 0.10, def: 0.075 });
+});
+
+test('getFeedBand returns the 6-10mm band for 8mm', () => {
+  assert.deepEqual(getFeedBand(8), { dmax: 10, fmin: 0.10, fmax: 0.15, def: 0.125 });
+});
 
 test('computeVc applies the alloy bias within each drill material range', () => {
   assert.equal(computeVc('hss', '6061'), 51);
@@ -250,23 +255,36 @@ test('computeAllResults normalizes the diameter and returns one result per drill
   assert.equal(results[1].rpm, 21938);
   assert.equal(results[2].rpm, 26239);
 });
-
-test('formatNumber formats with a fixed number of decimal places and thousands separators', () => {
-  assert.equal(formatNumber(2029, 0), '2,029');
-  assert.equal(formatNumber(0.125, 2), '0.13');
-});
 ```
 
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test`
-Expected: FAIL — `computeVc`, `computeResultForMaterial`, `computeAllResults`, `formatNumber`, `DRILL_MATERIALS` are not exported yet.
+Expected: FAIL — `assets/core/materials.js` does not exist yet (module not found).
 
 - [ ] **Step 3: Write the implementation**
 
-Append to `assets/app.js`:
+Create `assets/core/materials.js`:
 
 ```js
+import { nearestStandardDiameter } from './diameter.js';
+
+export const FEED_BANDS = [
+  { dmax: 3, fmin: 0.03, fmax: 0.06, def: 0.045 },
+  { dmax: 6, fmin: 0.05, fmax: 0.10, def: 0.075 },
+  { dmax: 10, fmin: 0.10, fmax: 0.15, def: 0.125 },
+  { dmax: 15, fmin: 0.15, fmax: 0.25, def: 0.20 },
+  { dmax: 20, fmin: 0.20, fmax: 0.30, def: 0.25 },
+  { dmax: Infinity, fmin: 0.25, fmax: 0.35, def: 0.30 }
+];
+
+export function getFeedBand(diameter) {
+  for (const band of FEED_BANDS) {
+    if (diameter <= band.dmax) return band;
+  }
+  return FEED_BANDS[FEED_BANDS.length - 1];
+}
+
 export const DRILL_MATERIALS = [
   { key: 'hss', label: '高速鋼 HSS', vcMin: 30, vcMax: 60 },
   { key: 'carbide', label: '硬質合金', vcMin: 150, vcMax: 300 },
@@ -316,13 +334,62 @@ export function computeAllResults(rawDiameter, alloyKey) {
   const results = DRILL_MATERIALS.map((m) => computeResultForMaterial(diameter, alloyKey, m.key));
   return { diameter, results };
 }
+```
 
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npm test`
+Expected: PASS (12 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add assets/core/materials.js assets/core/materials.test.js
+git commit -m "feat: add Vc/RPM/feed-rate calculation for the three drill materials"
+```
+
+---
+
+### Task 4: `core/format.js` — number formatting
+
+**Files:**
+- Create: `assets/core/format.js`
+- Create: `assets/core/format.test.js`
+
+**Interfaces:**
+- Produces: `formatNumber(n: number, digits: number): string`.
+
+- [ ] **Step 1: Write the failing test**
+
+Create `assets/core/format.test.js`:
+
+```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { formatNumber } from './format.js';
+
+test('formatNumber formats with a fixed number of decimal places and thousands separators', () => {
+  assert.equal(formatNumber(2029, 0), '2,029');
+  assert.equal(formatNumber(0.125, 2), '0.13');
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npm test`
+Expected: FAIL — `assets/core/format.js` does not exist yet (module not found).
+
+- [ ] **Step 3: Write the implementation**
+
+Create `assets/core/format.js`:
+
+```js
 export function formatNumber(n, digits) {
   return n.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm test`
 Expected: PASS (13 tests)
@@ -330,35 +397,37 @@ Expected: PASS (13 tests)
 - [ ] **Step 5: Commit**
 
 ```bash
-git add assets/app.js assets/app.test.js
-git commit -m "feat: add Vc/RPM/feed-rate calculation for the three drill materials"
+git add assets/core/format.js assets/core/format.test.js
+git commit -m "feat: add shared number formatting helper"
 ```
 
 ---
 
-### Task 4: History storage logic
+### Task 5: `data/historyStore.js` — per-browser history storage (資料存取)
 
 **Files:**
-- Modify: `assets/app.js`
-- Modify: `assets/app.test.js`
+- Create: `assets/data/historyStore.js`
+- Create: `assets/data/historyStore.test.js`
 
 **Interfaces:**
-- Consumes: `ALLOY_LABELS`, `computeAllResults` from Task 3.
-- Produces: `HISTORY_STORAGE_KEY` (string), `loadHistory(storage): Array`, `saveHistory(storage, list): void`, `addHistoryRecord(storage, diameter: number, alloyKey: string, results: Array): Array`, `deleteHistoryRecord(storage, id: string): Array`, `clearHistory(storage): Array`. `storage` is any object implementing `getItem(key)`/`setItem(key, value)` (the browser's `localStorage`, or a test double).
+- Consumes: `ALLOY_LABELS` from `../core/materials.js`, `computeAllResults` from `../core/materials.js` (test fixtures only).
+- Produces: `HISTORY_STORAGE_KEY` (string), `loadHistory(storage): Array`, `saveHistory(storage, list): void`, `addHistoryRecord(storage, diameter: number, alloyKey: string, results: Array): Array`, `deleteHistoryRecord(storage, id: string): Array`, `clearHistory(storage): Array`. `storage` is any object implementing `getItem(key)`/`setItem(key, value)` (the browser's `localStorage`, or a test double) — this file never touches `document` or the real `localStorage` global directly, so it works identically in Node tests and in the browser.
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `assets/app.test.js`:
+Create `assets/data/historyStore.test.js`:
 
 ```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { computeAllResults } from '../core/materials.js';
 import {
   HISTORY_STORAGE_KEY,
   loadHistory,
-  saveHistory,
   addHistoryRecord,
   deleteHistoryRecord,
   clearHistory
-} from './app.js';
+} from './historyStore.js';
 
 function createMemoryStorage() {
   const data = new Map();
@@ -423,13 +492,15 @@ test('clearHistory empties the stored list', () => {
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `npm test`
-Expected: FAIL — `HISTORY_STORAGE_KEY`, `loadHistory`, `saveHistory`, `addHistoryRecord`, `deleteHistoryRecord`, `clearHistory` are not exported yet.
+Expected: FAIL — `assets/data/historyStore.js` does not exist yet (module not found).
 
 - [ ] **Step 3: Write the implementation**
 
-Append to `assets/app.js`:
+Create `assets/data/historyStore.js`:
 
 ```js
+import { ALLOY_LABELS } from '../core/materials.js';
+
 export const HISTORY_STORAGE_KEY = 'drillSelectionHistory_v1';
 
 export function loadHistory(storage) {
@@ -483,19 +554,230 @@ Expected: PASS (19 tests)
 - [ ] **Step 5: Commit**
 
 ```bash
-git add assets/app.js assets/app.test.js
+git add assets/data/historyStore.js assets/data/historyStore.test.js
 git commit -m "feat: add per-browser history storage logic"
 ```
 
 ---
 
-### Task 5: Shared stylesheet
+### Task 6: `ui/toolView.js` — pure rendering for the tool page (畫面)
+
+**Files:**
+- Create: `assets/ui/toolView.js`
+- Create: `assets/ui/toolView.test.js`
+
+**Interfaces:**
+- Consumes: `formatNumber` from `../core/format.js`, `DRILL_MATERIALS` from `../core/materials.js`.
+- Produces: `EMPTY_COMPARE_ROW` (string), `GUIDANCE_DEFAULT_TEXT` (string), `GUIDANCE_RESULT_HTML` (string), `renderCompareRows(results: Array): string`, `renderDiameterHint(rawDiameter: number, normalizedDiameter: number): string`. No function here touches `document` — every function takes data in and returns an HTML string.
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `assets/ui/toolView.test.js`:
+
+```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { computeAllResults } from '../core/materials.js';
+import { renderCompareRows, renderDiameterHint } from './toolView.js';
+
+test('renderCompareRows includes all three material labels and their RPM values', () => {
+  const { results } = computeAllResults(8, '6061');
+  const html = renderCompareRows(results);
+  assert.match(html, /高速鋼 HSS/);
+  assert.match(html, /2,029/);
+  assert.match(html, /硬質合金/);
+  assert.match(html, /10,146/);
+  assert.match(html, /塗層硬質合金/);
+  assert.match(html, /12,136/);
+});
+
+test('renderDiameterHint shows a checkmark for an already-standard diameter', () => {
+  assert.equal(renderDiameterHint(8, 8), '✓ 市售標準鑽頭尺寸');
+});
+
+test('renderDiameterHint explains the snap for a non-standard diameter', () => {
+  const html = renderDiameterHint(3.672, 3.7);
+  assert.match(html, /3\.672mm 非市售規格/);
+  assert.match(html, /3\.7 mm/);
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npm test`
+Expected: FAIL — `assets/ui/toolView.js` does not exist yet (module not found).
+
+- [ ] **Step 3: Write the implementation**
+
+Create `assets/ui/toolView.js`:
+
+```js
+import { formatNumber } from '../core/format.js';
+import { DRILL_MATERIALS } from '../core/materials.js';
+
+export const EMPTY_COMPARE_ROW =
+  '<tr><td colspan="6" style="color: var(--readout-text-dim); padding: 20px 14px;">輸入直徑後顯示比較結果</td></tr>';
+
+export const GUIDANCE_DEFAULT_TEXT = '選擇材質並輸入直徑後,顯示選用原則';
+export const GUIDANCE_RESULT_HTML =
+  '一般用途或單件加工可選 <strong>高速鋼 HSS</strong>;長時間量產或需拉高轉速可選 <strong>硬質合金 / 塗層硬質合金</strong>。';
+
+function vcRangeLabel(drillMatKey) {
+  const material = DRILL_MATERIALS.find((m) => m.key === drillMatKey);
+  return material.vcMin + '–' + material.vcMax + ' m/min';
+}
+
+export function renderCompareRows(results) {
+  return results
+    .map(
+      (r) =>
+        '<tr>' +
+        '<td class="mat-name">' + r.drillMatLabel + '</td>' +
+        '<td>' + vcRangeLabel(r.drillMat) + '</td>' +
+        '<td>' + r.vc + ' m/min</td>' +
+        '<td class="rpm-cell">' + formatNumber(r.rpm, 0) + '</td>' +
+        '<td>' + formatNumber(r.f, 2) + ' mm/rev</td>' +
+        '<td class="feed-cell">' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
+        '</tr>'
+    )
+    .join('');
+}
+
+export function renderDiameterHint(rawDiameter, normalizedDiameter) {
+  if (Math.abs(rawDiameter - normalizedDiameter) < 0.001) {
+    return '✓ 市售標準鑽頭尺寸';
+  }
+  return '⚙ ' + rawDiameter + 'mm 非市售規格,已對應到最接近的 <strong>' + normalizedDiameter + ' mm</strong> 計算';
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npm test`
+Expected: PASS (22 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add assets/ui/toolView.js assets/ui/toolView.test.js
+git commit -m "feat: add pure render functions for the tool page comparison table"
+```
+
+---
+
+### Task 7: `ui/historyView.js` — pure rendering for the history page (畫面)
+
+**Files:**
+- Create: `assets/ui/historyView.js`
+- Create: `assets/ui/historyView.test.js`
+
+**Interfaces:**
+- Consumes: `formatNumber` from `../core/format.js`.
+- Produces: `EMPTY_STATE_HTML` (string), `renderHistoryRecord(record): string`, `renderHistoryList(list: Array): string`. No function here touches `document`.
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `assets/ui/historyView.test.js`:
+
+```js
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { computeAllResults } from '../core/materials.js';
+import { renderHistoryList, EMPTY_STATE_HTML } from './historyView.js';
+
+test('renderHistoryList shows the empty state for an empty list', () => {
+  assert.equal(renderHistoryList([]), EMPTY_STATE_HTML);
+});
+
+test('renderHistoryList renders a record with its diameter, alloy, and all three material rows', () => {
+  const { results } = computeAllResults(8, '6061');
+  const record = {
+    id: 'abc123',
+    timestamp: '2026-08-22T00:00:00.000Z',
+    diameter: 8,
+    alloy: '6061',
+    alloyLabel: '6061',
+    results
+  };
+  const html = renderHistoryList([record]);
+  assert.match(html, /8mm · 6061/);
+  assert.match(html, /高速鋼 HSS/);
+  assert.match(html, /2,029/);
+  assert.match(html, /data-id="abc123"/);
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npm test`
+Expected: FAIL — `assets/ui/historyView.js` does not exist yet (module not found).
+
+- [ ] **Step 3: Write the implementation**
+
+Create `assets/ui/historyView.js`:
+
+```js
+import { formatNumber } from '../core/format.js';
+
+export const EMPTY_STATE_HTML =
+  '<div class="empty-state">尚無記錄,到「鑽頭選擇」頁計算後按「加入記錄」即可保存於此</div>';
+
+function renderRecordRows(results) {
+  return results
+    .map(
+      (r) =>
+        '<tr>' +
+        '<td>' + r.drillMatLabel + '</td>' +
+        '<td>' + formatNumber(r.rpm, 0) + ' RPM</td>' +
+        '<td>' + formatNumber(r.f, 2) + ' mm/rev · ' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
+        '</tr>'
+    )
+    .join('');
+}
+
+export function renderHistoryRecord(record) {
+  const time = new Date(record.timestamp).toLocaleString('zh-TW');
+  return (
+    '<div class="history-record">' +
+    '<div class="record-head">' +
+    '<span class="record-title">' + record.diameter + 'mm · ' + record.alloyLabel + '</span>' +
+    '<span class="record-time">' + time + '</span>' +
+    '<button class="del-btn btn-ghost" data-id="' + record.id + '">刪除</button>' +
+    '</div>' +
+    '<table><thead><tr><th>材質</th><th>轉速</th><th>進給量</th></tr></thead><tbody>' +
+    renderRecordRows(record.results) +
+    '</tbody></table>' +
+    '</div>'
+  );
+}
+
+export function renderHistoryList(list) {
+  if (list.length === 0) return EMPTY_STATE_HTML;
+  return list.map(renderHistoryRecord).join('');
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npm test`
+Expected: PASS (24 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add assets/ui/historyView.js assets/ui/historyView.test.js
+git commit -m "feat: add pure render functions for the history page"
+```
+
+---
+
+### Task 8: Shared stylesheet
 
 **Files:**
 - Create: `assets/style.css`
 
 **Interfaces:**
-- Produces: CSS custom properties and classes (`.wrap`, `nav.site-nav`, `.panel`, `.field-grid`/`.field`, `.compare-wrap`/`.compare-table`, `.params-line`, `.actions`, `button` variants, `.confirm-bar`, `.history-list`/`.history-record`, `.empty-state`, `footer.note`) consumed by Tasks 6–8.
+- Produces: CSS custom properties and classes (`.wrap`, `nav.site-nav`, `.panel`, `.field-grid`/`.field`, `.compare-wrap`/`.compare-table`, `.params-line`, `.actions`, `button` variants, `.confirm-bar`, `.history-list`/`.history-record`, `.empty-state`, `footer.note`) consumed by Task 9 and Task 10's HTML pages.
 
 - [ ] **Step 1: Write the stylesheet**
 
@@ -867,14 +1149,15 @@ git commit -m "feat: add shared stylesheet for the multi-page site"
 
 ---
 
-### Task 6: Tool page (核心功能:鑽頭選擇與計算)
+### Task 9: Tool page — `tool.html` + `ui/toolController.js` (操作)
 
 **Files:**
 - Create: `tool.html`
-- Create: `assets/tool.js`
+- Create: `assets/ui/toolController.js`
 
 **Interfaces:**
-- Consumes: `STANDARD_SIZES`, `DRILL_MATERIALS`, `nearestStandardDiameter`, `computeAllResults`, `addHistoryRecord`, `formatNumber` from `assets/app.js`.
+- Consumes: `STANDARD_SIZES`, `nearestStandardDiameter` from `../core/diameter.js`; `computeAllResults` from `../core/materials.js`; `addHistoryRecord` from `../data/historyStore.js`; `EMPTY_COMPARE_ROW`, `GUIDANCE_DEFAULT_TEXT`, `GUIDANCE_RESULT_HTML`, `renderCompareRows`, `renderDiameterHint` from `./toolView.js`.
+- This file contains **no calculation and no HTML-string building** — it only reads form inputs, calls the functions above, and assigns their results to `innerHTML`/`textContent`.
 
 - [ ] **Step 1: Create `tool.html`**
 
@@ -953,22 +1236,24 @@ git commit -m "feat: add shared stylesheet for the multi-page site"
   </footer>
 </div>
 
-<script type="module" src="assets/tool.js"></script>
+<script type="module" src="assets/ui/toolController.js"></script>
 </body>
 </html>
 ```
 
-- [ ] **Step 2: Create `assets/tool.js`**
+- [ ] **Step 2: Create `assets/ui/toolController.js`**
 
 ```js
+import { STANDARD_SIZES, nearestStandardDiameter } from '../core/diameter.js';
+import { computeAllResults } from '../core/materials.js';
+import { addHistoryRecord } from '../data/historyStore.js';
 import {
-  STANDARD_SIZES,
-  DRILL_MATERIALS,
-  nearestStandardDiameter,
-  computeAllResults,
-  addHistoryRecord,
-  formatNumber
-} from './app.js';
+  EMPTY_COMPARE_ROW,
+  GUIDANCE_DEFAULT_TEXT,
+  GUIDANCE_RESULT_HTML,
+  renderCompareRows,
+  renderDiameterHint
+} from './toolView.js';
 
 const diameterEl = document.getElementById('diameter');
 const alloyEl = document.getElementById('alloy');
@@ -977,49 +1262,21 @@ const diaHint = document.getElementById('diaHint');
 const guidanceLine = document.getElementById('guidanceLine');
 const addBtn = document.getElementById('addBtn');
 
-function vcRangeLabel(drillMatKey) {
-  const material = DRILL_MATERIALS.find((m) => m.key === drillMatKey);
-  return material.vcMin + '–' + material.vcMax + ' m/min';
-}
-
 let currentComputation = null;
 
 function renderEmpty() {
-  compareBody.innerHTML =
-    '<tr><td colspan="6" style="color: var(--readout-text-dim); padding: 20px 14px;">輸入直徑後顯示比較結果</td></tr>';
+  compareBody.innerHTML = EMPTY_COMPARE_ROW;
   diaHint.innerHTML = '&nbsp;';
-  guidanceLine.textContent = '選擇材質並輸入直徑後,顯示選用原則';
+  guidanceLine.textContent = GUIDANCE_DEFAULT_TEXT;
   addBtn.disabled = true;
   currentComputation = null;
 }
 
 function renderResults(rawDiameter, alloyKey) {
   const { diameter, results } = computeAllResults(rawDiameter, alloyKey);
-
-  if (Math.abs(rawDiameter - diameter) < 0.001) {
-    diaHint.innerHTML = '✓ 市售標準鑽頭尺寸';
-  } else {
-    diaHint.innerHTML =
-      '⚙ ' + rawDiameter + 'mm 非市售規格,已對應到最接近的 <strong>' + diameter + ' mm</strong> 計算';
-  }
-
-  compareBody.innerHTML = results
-    .map(
-      (r) =>
-        '<tr>' +
-        '<td class="mat-name">' + r.drillMatLabel + '</td>' +
-        '<td>' + vcRangeLabel(r.drillMat) + '</td>' +
-        '<td>' + r.vc + ' m/min</td>' +
-        '<td class="rpm-cell">' + formatNumber(r.rpm, 0) + '</td>' +
-        '<td>' + formatNumber(r.f, 2) + ' mm/rev</td>' +
-        '<td class="feed-cell">' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
-        '</tr>'
-    )
-    .join('');
-
-  guidanceLine.innerHTML =
-    '一般用途或單件加工可選 <strong>高速鋼 HSS</strong>;長時間量產或需拉高轉速可選 <strong>硬質合金 / 塗層硬質合金</strong>。';
-
+  diaHint.innerHTML = renderDiameterHint(rawDiameter, diameter);
+  compareBody.innerHTML = renderCompareRows(results);
+  guidanceLine.innerHTML = GUIDANCE_RESULT_HTML;
   addBtn.disabled = false;
   currentComputation = { diameter, alloy: alloyKey, results };
 }
@@ -1072,28 +1329,29 @@ npx serve .
 ```
 
 Open the printed `http://localhost:...` URL, navigate to `tool.html`, and verify:
-- Entering `8` with alloy `6061` shows a 3-row comparison table: HSS row reads 51 m/min / 2,029 RPM / 0.13 mm/rev / 254 mm/min; carbide row reads 255 m/min / 10,146 RPM; coated row reads 305 m/min / 12,136 RPM.
+- Entering `8` with alloy `6061` shows a 3-row comparison table: HSS row reads 30–60 m/min / 51 m/min / 2,029 / 0.13 mm/rev / 254 mm/min; carbide row reads 150–300 m/min / 255 m/min / 10,146 / 1,268 mm/min; coated row reads 200–350 m/min / 305 m/min / 12,136 / 1,517 mm/min. (These exact numbers were confirmed against the unit tests during planning.)
 - Entering `3.672` shows the hint "⚙ 3.672mm 非市售規格,已對應到最接近的 3.7 mm 計算" and recalculates using 3.7mm.
-- Entering `40` clamps to 32mm.
-- Clicking "加入記錄" while a result is shown enables briefly shows "已加入 ✓" and does not throw a console error.
+- Entering `40` clamps to 32mm on blur.
+- Clicking "加入記錄" briefly shows "已加入 ✓" and no console error appears.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add tool.html assets/tool.js
+git add tool.html assets/ui/toolController.js
 git commit -m "feat: add tool page with three-material comparison table"
 ```
 
 ---
 
-### Task 7: History page
+### Task 10: History page — `history.html` + `ui/historyController.js` (操作)
 
 **Files:**
 - Create: `history.html`
-- Create: `assets/history.js`
+- Create: `assets/ui/historyController.js`
 
 **Interfaces:**
-- Consumes: `loadHistory`, `deleteHistoryRecord`, `clearHistory`, `formatNumber` from `assets/app.js`.
+- Consumes: `loadHistory`, `deleteHistoryRecord`, `clearHistory` from `../data/historyStore.js`; `renderHistoryList` from `./historyView.js`.
+- This file contains **no HTML-string building** — it only wires button clicks, calls the storage functions, and assigns `renderHistoryList`'s output to `innerHTML`.
 
 - [ ] **Step 1: Create `history.html`**
 
@@ -1138,15 +1396,16 @@ git commit -m "feat: add tool page with three-material comparison table"
   </section>
 </div>
 
-<script type="module" src="assets/history.js"></script>
+<script type="module" src="assets/ui/historyController.js"></script>
 </body>
 </html>
 ```
 
-- [ ] **Step 2: Create `assets/history.js`**
+- [ ] **Step 2: Create `assets/ui/historyController.js`**
 
 ```js
-import { loadHistory, deleteHistoryRecord, clearHistory, formatNumber } from './app.js';
+import { loadHistory, deleteHistoryRecord, clearHistory } from '../data/historyStore.js';
+import { renderHistoryList } from './historyView.js';
 
 const historyList = document.getElementById('historyList');
 const clearAllBtn = document.getElementById('clearAllBtn');
@@ -1155,38 +1414,7 @@ const confirmClearBtn = document.getElementById('confirmClearBtn');
 const cancelClearBtn = document.getElementById('cancelClearBtn');
 
 function render() {
-  const list = loadHistory(localStorage);
-  if (list.length === 0) {
-    historyList.innerHTML =
-      '<div class="empty-state">尚無記錄,到「鑽頭選擇」頁計算後按「加入記錄」即可保存於此</div>';
-    return;
-  }
-
-  historyList.innerHTML = list
-    .map((record) => {
-      const rows = record.results
-        .map(
-          (r) =>
-            '<tr>' +
-            '<td>' + r.drillMatLabel + '</td>' +
-            '<td>' + formatNumber(r.rpm, 0) + ' RPM</td>' +
-            '<td>' + formatNumber(r.f, 2) + ' mm/rev · ' + formatNumber(r.feedRate, 0) + ' mm/min</td>' +
-            '</tr>'
-        )
-        .join('');
-      const time = new Date(record.timestamp).toLocaleString('zh-TW');
-      return (
-        '<div class="history-record">' +
-        '<div class="record-head">' +
-        '<span class="record-title">' + record.diameter + 'mm · ' + record.alloyLabel + '</span>' +
-        '<span class="record-time">' + time + '</span>' +
-        '<button class="del-btn btn-ghost" data-id="' + record.id + '">刪除</button>' +
-        '</div>' +
-        '<table><thead><tr><th>材質</th><th>轉速</th><th>進給量</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-        '</div>'
-      );
-    })
-    .join('');
+  historyList.innerHTML = renderHistoryList(loadHistory(localStorage));
 }
 
 historyList.addEventListener('click', (e) => {
@@ -1222,13 +1450,13 @@ With `npx serve .` still running:
 - [ ] **Step 4: Commit**
 
 ```bash
-git add history.html assets/history.js
+git add history.html assets/ui/historyController.js
 git commit -m "feat: add history page"
 ```
 
 ---
 
-### Task 8: Home page
+### Task 11: Home page
 
 **Files:**
 - Create: `index.html`
@@ -1290,21 +1518,21 @@ git commit -m "feat: add home page"
 
 ---
 
-### Task 9: Full local integration walkthrough
+### Task 12: Full local integration walkthrough
 
 **Files:** None (verification only).
 
 - [ ] **Step 1: Run the full automated test suite**
 
 Run: `npm test`
-Expected: PASS (19 tests, 0 failures)
+Expected: PASS (24 tests, 0 failures)
 
 - [ ] **Step 2: Walk the golden path end-to-end in a browser**
 
 With `npx serve .` running from the project root:
 1. Open the root URL → lands on `index.html`.
 2. Click "開始使用鑽頭選擇工具" → lands on `tool.html`.
-3. Enter diameter `8`, alloy `6061` → comparison table shows HSS/carbide/coated rows with the values verified in Task 6.
+3. Enter diameter `8`, alloy `6061` → comparison table shows HSS/carbide/coated rows with the values verified in Task 9.
 4. Click "加入記錄".
 5. Change diameter to `12`, alloy `7075`, click "加入記錄" again.
 6. Navigate to `history.html` via the nav bar → both records appear, newest (12mm/7075) first, each showing all three material rows.
@@ -1314,11 +1542,11 @@ With `npx serve .` running from the project root:
 
 - [ ] **Step 3: Check the browser console for errors**
 
-Open browser dev tools on each of the three pages; confirm no uncaught errors or 404s (in particular, confirm the Google Fonts stylesheet and `assets/app.js`/`assets/style.css` all load with 200 status).
+Open browser dev tools on each of the three pages; confirm no uncaught errors or 404s (in particular, confirm the Google Fonts stylesheet, `assets/style.css`, and every `assets/core/*.js` / `assets/data/*.js` / `assets/ui/*.js` module load with 200 status).
 
 - [ ] **Step 4: Commit any fixes found during the walkthrough**
 
-If Steps 1–3 surface a bug, fix it, re-run `npm test` and the affected browser check, then commit with a message describing the fix (e.g. `fix: correct history record ordering`).
+If Steps 1–3 surface a bug, fix it in the file whose responsibility it belongs to (calculation bug → `core/`, storage bug → `data/`, wrong HTML → `*View.js`, wrong event wiring → `*Controller.js`), re-run `npm test` and the affected browser check, then commit with a message describing the fix (e.g. `fix: correct history record ordering`).
 
 ---
 
