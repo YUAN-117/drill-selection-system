@@ -12,7 +12,11 @@ export function loadHistory(storage) {
 }
 
 export function saveHistory(storage, list) {
-  storage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list));
+  try {
+    storage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(list));
+  } catch {
+    // Ignore quota errors / unavailable storage (e.g. Safari private browsing).
+  }
 }
 
 function makeRecordId() {
