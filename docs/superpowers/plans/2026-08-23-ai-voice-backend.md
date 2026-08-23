@@ -553,45 +553,65 @@ git commit -m "feat: wire parse-drill-voice edge function handler"
 
 **Interfaces:** none — this task applies Task 1's migration and deploys Task 6's function to the live Supabase project (`eefnzpqveljowridmhto`).
 
-- [ ] **Step 1: 安裝並登入 Supabase CLI(透過 npx,不需要全域安裝)**
+**這個環境用 Docker 跑 Supabase CLI(`supabase/cli` 官方 image),不裝 Node 全域套件、也不用互動式瀏覽器登入**——改用 Personal Access Token(PAT)透過環境變數授權,這樣每個 `docker run` 都是獨立的一次性容器也不會有登入態遺失的問題。
 
-```bash
-npx supabase@latest --version
-npx supabase@latest login
+- [ ] **Step 1: 產生 Supabase Personal Access Token**
+
+1. 打開 https://supabase.com/dashboard ,點右上角帳號頭像 → **Access Tokens**(或 Ctrl+K 搜尋 `Access Tokens`)
+2. 點 **Generate new token**,取個名字(例如 `drill-selection-system-cli`),產生後複製起來(`sbp_` 開頭的一長串)——這把 token 等同你整個 Supabase 帳號的操作權限,**只在終端機環境變數裡用,不要貼進任何檔案或 git**
+
+- [ ] **Step 2: 把 token 存進當前終端機 session 的環境變數(不寫進任何檔案)**
+
+PowerShell:
+```powershell
+$env:SUPABASE_ACCESS_TOKEN = "<貼上 Step 1 拿到的 token>"
 ```
 
-`login` 會打開瀏覽器要求授權,**這步需要使用者本人在瀏覽器完成**,不是指令本身能自動做完的。
-
-- [ ] **Step 2: 連結到現有的 Supabase 專案**
-
+Bash:
 ```bash
-npx supabase@latest link --project-ref eefnzpqveljowridmhto
+export SUPABASE_ACCESS_TOKEN="<貼上 Step 1 拿到的 token>"
 ```
 
-- [ ] **Step 3: 套用 migration(建立 `ai_usage` 表)**
+- [ ] **Step 3: 拉取 Supabase CLI 的官方 Docker image**
 
 ```bash
-npx supabase@latest db push
+docker pull supabase/cli:latest
+```
+
+- [ ] **Step 4: 連結到現有的 Supabase 專案**
+
+```bash
+docker run --rm -e SUPABASE_ACCESS_TOKEN -v "$(pwd):/workspace" -w /workspace supabase/cli:latest link --project-ref eefnzpqveljowridmhto
+```
+
+`-v "$(pwd):/workspace"` 把目前的專案資料夾掛進容器,`link` 產生的設定(例如 `supabase/.temp/`)會寫回這個資料夾,所以雖然容器用完即丟(`--rm`),連結狀態還是留在硬碟上,下一個指令讀得到。
+
+- [ ] **Step 5: 套用 migration(建立 `ai_usage` 表)**
+
+```bash
+docker run --rm -e SUPABASE_ACCESS_TOKEN -v "$(pwd):/workspace" -w /workspace supabase/cli:latest db push
 ```
 
 Expected: 終端機顯示 `20260823000000_create_ai_usage.sql` 已套用成功。可以到 Supabase 後台的 Table Editor 確認 `ai_usage` 表出現,欄位為 `id`、`user_id`、`created_at`。
 
-- [ ] **Step 4: 部署 Edge Function**
+- [ ] **Step 6: 部署 Edge Function**
 
 ```bash
-npx supabase@latest functions deploy parse-drill-voice
+docker run --rm -e SUPABASE_ACCESS_TOKEN -v "$(pwd):/workspace" -w /workspace supabase/cli:latest functions deploy parse-drill-voice
 ```
 
 Expected: 終端機顯示部署成功,並給出函式的呼叫網址(格式類似 `https://eefnzpqveljowridmhto.supabase.co/functions/v1/parse-drill-voice`)。
 
-- [ ] **Step 5: 手動驗證(瀏覽器 DevTools 或 curl)**
+如果 `-v "$(pwd):/workspace"` 在這台機器上因為路徑含中文字(`鑽頭選擇系統`)導致 Docker 掛載失敗,改用 Docker Desktop 認得的絕對路徑寫法重試,例如把 `$(pwd)` 換成 Git Bash 印出的完整路徑,或改用 PowerShell 語法 `${PWD}`。
+
+- [ ] **Step 7: 手動驗證(瀏覽器 DevTools 或 curl)**
 
 因為這支函式需要登入者的 access token,最簡單的驗證方式是等前端那份計畫(下一份 plan)做完、能在瀏覽器裡登入後直接點麥克風測試。若想在前端完成前先驗證函式本身能跑:
 
 1. 未帶 Authorization header 呼叫,應該收到 `401 { ok: false, code: 'NOT_AUTHENTICATED' }`。
 2. 確認 Supabase 後台 Edge Functions → `parse-drill-voice` 的 Logs 分頁看得到剛剛這次呼叫的紀錄。
 
-- [ ] **Step 6: Commit(如果 Step 1-4 有產生任何本機設定檔變更,例如 `supabase/.temp/` 或 `.gitignore` 需要更新)**
+- [ ] **Step 8: Commit(如果 Step 3-6 有產生任何本機設定檔變更,例如 `supabase/.temp/` 或 `.gitignore` 需要更新)**
 
 ```bash
 git status
