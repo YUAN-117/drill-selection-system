@@ -53,17 +53,18 @@
 - ✅ Google OAuth 同意畫面(Google Auth Platform)已設定完成,使用者類型為外部(External)
 - ✅ Google OAuth Client(`drill-selection-system web`,Web application 類型)已建立,redirect URI 已指向 Supabase callback network
 - ✅ Client ID / Client Secret 已貼回 Supabase 的 Google Provider 設定並儲存,「Skip nonce checks」已確認關閉、Google 登入已啟用
-- ⏳ **Anthropic API 金鑰:上次對話在這裡暫停**,還沒確認使用者是否已完成申請 API 金鑰、設定好帳單付款方式。**請先跟使用者確認這一步是否完成**,完成才能繼續下一步
+- ✅ Anthropic API 金鑰已申請、帳單/付款方式已設定完成
+- ✅ 金鑰已透過 Supabase 網頁後台設定進 Edge Function 的環境變數(`ANTHROPIC_API_KEY`),沒有出現在程式碼或 git 裡
+
+**外部帳號設定已全部完成,下一步是進入實作規劃階段(見下方接下來的步驟)。**
 
 ### 接下來的步驟
 
-1. **先問使用者**:Anthropic API 金鑰申請好了嗎?帳單/付款方式設定好了嗎?
-2. 金鑰確認好之後,引導使用者把金鑰設定進 **Supabase Edge Function 的環境變數**(用 Supabase 後台介面,或 `supabase secrets set ANTHROPIC_API_KEY=xxx` 指令),**金鑰絕對不能出現在前端程式碼或 commit 進 git**
-3. 照這個專案已經在用的流程繼續:
+1. 照這個專案已經在用的流程繼續:
    - 用 `superpowers:brainstorming` 或直接確認規格細節都問清楚了(規格文件應該已經足夠完整,可以直接進入下一步)
    - 用 `superpowers:writing-plans` 把 spec 拆成 TDD 實作計畫,存到 `docs/superpowers/plans/`
    - 用 `superpowers:subagent-driven-development`(如果工具支援)或一般方式逐步實作、測試、review
-4. 實作範圍大致包含:
+2. 實作範圍大致包含:
    - `tool.html` 新增麥克風按鈕與登入狀態顯示
    - 前端新增呼叫瀏覽器語音辨識(Web Speech API)的邏輯
    - 前端新增呼叫 Supabase Auth(Google 登入)與呼叫 Edge Function 的 `data` 層邏輯
