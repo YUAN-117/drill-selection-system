@@ -60,7 +60,10 @@ export async function getSession() {
 }
 
 export async function signInWithGoogle() {
-  return supabase.auth.signInWithOAuth({ provider: 'google' });
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.href }
+  });
 }
 
 export async function signOut() {
@@ -86,6 +89,8 @@ import('./assets/data/supabaseClient.js').then(async (m) => {
 ```
 
 Expected: 印出 `null`(還沒登入)。如果印出錯誤(例如 `Failed to fetch` 或 key 格式錯誤),回頭檢查 Step 1 貼的 anon key 是否正確、有沒有多餘空白。
+
+**額外的必要設定(2026-08-24 手動測試時發現,不在原本的規格裡)**:Supabase 後台 Authentication → URL Configuration 的 **Redirect URLs** 預設是空的,Site URL 是 Supabase 給的預設值 `http://localhost:3000`。Google 登入完成後 Supabase 只會導回這個清單裡列出的網址,不在清單裡就會被導去錯的地方、畫面卡在「未登入」。**需要在這裡把測試/正式環境的網址加進 Redirect URLs**(例如本機測試用 `http://127.0.0.1:5500/**`,之後部署到 GitHub Pages 要另外加 `https://yuan-117.github.io/**`),同時 `signInWithGoogle()` 要明確帶 `options: { redirectTo: window.location.href }`(已經寫進上面 Step 2 的程式碼裡)才會登入完準確導回原本的頁面而不是首頁。
 
 - [ ] **Step 4: Commit**
 
