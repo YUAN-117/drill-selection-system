@@ -19,7 +19,7 @@
 - 比較表從「三欄並排」改成「單一結果」(仍保留採用 Vc / RPM / 進給量 / 進給速度的呈現方式,只是不再三種材質並排)
 - `assets/data/historyStore.js` 紀錄格式配合改成存單一結果 + 選用的鑽頭材質(而不是 `results` 陣列存三種)
 - `assets/ui/historyView.js` / `history.html` 配合新的紀錄格式調整顯示
-- Supabase Edge Function(`supabase/functions/parse-drill-voice/`)的 `promptBuilder.js`/`parseAiResponse.js` 擴充允許辨識的工件材料清單(6 大類 + 鋁合金子項,共約 9 個 key)
+- Supabase Edge Function(`supabase/functions/parse-drill-voice/`)的 `promptBuilder.js`/`parseAiResponse.js` 擴充允許辨識的工件材料清單(6 大類共 9 種「大類:子項」組合,扣掉不給 AI 猜的 `aluminum:custom`,共 8 個 key)
 - 所有既有測試配合新資料結構改寫,新增的計算邏輯要有對應測試
 
 **明確不做(這次範圍外,以後有需要再擴充):**
@@ -128,7 +128,7 @@ export const WORKPIECE_MATERIALS = {
 
 ### 資料來源與可信度
 
-以上數值整理自公開的刀具廠商速度/進給參考表與塑膠材料加工指南(非實測驗證),沿用這個專案一貫的原則——**這些是經驗常用範圍,不是精確固定值**。銅合金塗層硬質合金、不鏽鋼塗層硬質合金兩個數值是用「硬質合金數值 + 20~50% 提升」的經驗法則推估,標記 `lowConfidence`。使用者之後若有更準確的實測或廠商數據,可以直接覆蓋這些數字。
+以上數值整理自公開的刀具廠商速度/進給參考表與塑膠材料加工指南(非實測驗證),沿用這個專案一貫的原則——**這些是經驗常用範圍,不是精確固定值**。銅合金塗層硬質合金、不鏽鋼塗層硬質合金兩個數值是用「硬質合金數值 + 20~50% 提升」的經驗法則推估,標記 `lowConfidence`。另外,不鏽鋼的三段進給量分段(依直徑 6mm/15mm 分段)是根據來源給的「進給下限 0.10mm/rev」加上單一組範例數字(11mm 鑽頭約 0.20–0.30mm/rev)內插補出來的分段曲線,**不是來源直接給的分段表**,精確度比鋁合金/PC 的分段(有明確的逐段來源數據)低一些,但仍在合理範圍內。使用者之後若有更準確的實測或廠商數據,可以直接覆蓋這些數字。
 
 ## 計算邏輯變化
 
@@ -189,13 +189,19 @@ export const WORKPIECE_MATERIALS = {
 
 ## AI 語音輸入的擴充範圍
 
-`promptBuilder.js` 的 `ALLOWED_ALLOY_KEYS`(未來改名 `ALLOWED_MATERIAL_KEYS`)從 3 個擴充成對應 `WORKPIECE_MATERIALS` 裡所有「大類:子項」組合(共 9 個:`aluminum:6061`、`aluminum:7075`、`aluminum:a380`、`copper:brass`、`stainless:standard`、`peek:standard`、`pc:standard`、`pom:standard`,**不含** `aluminum:custom`,原因同既有設計——AI 沒辦法幫使用者猜「自訂」該填什麼參數)。
+`promptBuilder.js` 的 `ALLOWED_ALLOY_KEYS`(未來改名 `ALLOWED_MATERIAL_KEYS`)從 3 個擴充成對應 `WORKPIECE_MATERIALS` 裡所有「大類:子項」組合(共 8 個:`aluminum:6061`、`aluminum:7075`、`aluminum:a380`、`copper:brass`、`stainless:standard`、`peek:standard`、`pc:standard`、`pom:standard`,**不含** `aluminum:custom`,原因同既有設計——AI 沒辦法幫使用者猜「自訂」該填什麼參數)。
 
 `parseAiResponse.js` 的驗證邏輯同步更新允許清單。System prompt 裡列出的材質說明文字也要跟著更新(讓 AI 知道使用者說「不鏽鋼」「PC」時該對應到哪個 key)。
 
 **語音輸入不解析鑽頭材質**——語音填完直徑跟工件材料後,`#drillMat` 維持原本的值不變(使用者上次選的,或頁面預設值),不會被語音結果覆蓋。
 
-**欄位命名與回傳格式**:Edge Function 回應的 `alloy` 欄位比照前端改名為 `material`,值直接是上面列的「大類:子項」組合字串(例如 `"stainless:standard"`),前端拿到後可以直接設定 `#material.value = result.material`,不需要額外轉換。`voiceParseClient.js`、`voiceInputController.js`、`voiceInputView.js` 裡所有 `alloy` 相關的變數/參數名稱也一併改成 `material`,跟前端其他部分命名一致。
+**欄位命名與回傳格式**:`alloy` 這個欄位名稱要在整條資料流一致改成 `material`,不能只改前端、後端還留著舊名——具體包含:
+- `promptBuilder.js` 裡 `record_drill_voice_input` 工具 schema 的 `alloy` 屬性改名 `material`(值域是上面列的 9 個「大類:子項」組合字串,例如 `"stainless:standard"`,取代原本的裸鍵值如 `"6061"`)
+- `parseAiResponse.js` 的 `parseVoiceToolInput` 回傳物件的 `alloy` 欄位改成 `material`
+- `index.ts` 回應給前端的 JSON 裡 `alloy` 欄位改成 `material`
+- 前端 `voiceParseClient.js`、`voiceInputController.js`、`voiceInputView.js` 裡所有 `alloy` 相關的變數/參數名稱也一併改成 `material`
+
+改完後前端拿到 `result.material` 可以直接設定 `#material.value = result.material`,不需要額外轉換或拼接字串。
 
 ## 測試策略
 
