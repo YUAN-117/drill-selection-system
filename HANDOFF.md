@@ -36,7 +36,7 @@
   - 後端實作計畫(已全部完成、已部署上線):[`docs/superpowers/plans/2026-08-23-ai-voice-backend.md`](docs/superpowers/plans/2026-08-23-ai-voice-backend.md) — Supabase Edge Function `parse-drill-voice`,已部署到 `https://eefnzpqveljowridmhto.supabase.co/functions/v1/parse-drill-voice`
   - 前端實作計畫(已全部完成):[`docs/superpowers/plans/2026-08-23-ai-voice-frontend.md`](docs/superpowers/plans/2026-08-23-ai-voice-frontend.md) — `tool.html` 的麥克風按鈕、登入狀態列、`assets/data/supabaseClient.js`、`voiceParseClient.js`、`voiceHistoryStore.js`、`assets/ui/voiceInputView.js`、`voiceInputController.js`
   - 已在本機(`http://127.0.0.1:5500`,用 `npx serve`)實測通過:Google 登入、語音辨識成功自動填表、解析失敗不亂填、localStorage 紀錄、每小時 15 次上限擋下第 16 次以後的請求、無痕視窗(未登入)下原有計算器/歷史紀錄功能不受影響
-  - **⚠️ 部署到正式站(GitHub Pages)前還有一件事要做**:Supabase 後台 Authentication → URL Configuration → Redirect URLs 目前只加了本機測試用的 `http://127.0.0.1:5500/**`,**還沒加 `https://yuan-117.github.io/**`**。正式站上線後如果 Google 登入完又跳回首頁、狀態卡在「未登入」,就是這個沒加,回去 Supabase 後台加上去就好(細節寫在前端計畫 Task 1 的 Step 3 那段)。
+  - ✅ Supabase 後台 Authentication → URL Configuration → Redirect URLs 已加好 `http://127.0.0.1:5500/**`(本機測試)跟 `https://yuan-117.github.io/**`(正式站),兩個都在清單裡,部署到 GitHub Pages 後 Google 登入不需要再額外設定。
   - Anthropic $5 額度用得很省(用 Haiku、每小時 15 次上限),不用特別擔心突然被扣款——因為 Console 裡的自動加值(auto-reload)當時選了 Skip,額度用完就是用完,不會自動扣卡。
 
 ## 溝通注意事項
