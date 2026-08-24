@@ -39,6 +39,23 @@
   - ✅ Supabase 後台 Authentication → URL Configuration → Redirect URLs 已加好 `http://127.0.0.1:5500/**`(本機測試)跟 `https://yuan-117.github.io/**`(正式站),兩個都在清單裡,部署到 GitHub Pages 後 Google 登入不需要再額外設定。
   - Anthropic $5 額度用得很省(用 Haiku、每小時 15 次上限),不用特別擔心突然被扣款——因為 Console 裡的自動加值(auto-reload)當時選了 Skip,額度用完就是用完,不會自動扣卡。
 
+## 進行中:多材料鑽頭選擇擴充(2026-08-24 設計完成,尚未開始實作)
+
+**使用者想擴充的功能:**
+1. 新增「鑽頭材質」下拉選單,使用者自己選一種(不再自動算三種並排比較),選項文字帶建議 Vc 範圍
+2. 「材料材質」從只有鋁合金,擴充成鋁合金/銅合金(黃銅)/不鏽鋼/PEEK/PC/POM 六大類
+
+**規格文件**(已寫好、已 commit、已自我審查修過 3 個問題):
+[`docs/superpowers/specs/2026-08-24-multi-material-drill-selection-design.md`](docs/superpowers/specs/2026-08-24-multi-material-drill-selection-design.md)
+
+**實作計畫**(已寫好、已 commit、已自我審查修過 1 個防呆漏洞,**還沒開始執行任何一個 task**):
+- 核心計算 + 畫面(先做這份):[`docs/superpowers/plans/2026-08-24-multi-material-core-ui.md`](docs/superpowers/plans/2026-08-24-multi-material-core-ui.md)——7 個 task,重寫 `materials.js`、`toolView.js`、`toolController.js`、`tool.html`、`historyStore.js`、`historyView.js`
+- AI 語音輸入擴充(依賴前一份先做完):[`docs/superpowers/plans/2026-08-24-multi-material-voice.md`](docs/superpowers/plans/2026-08-24-multi-material-voice.md)——5 個 task,擴充 `promptBuilder.js`/`parseAiResponse.js` 允許的材料清單、`index.ts`/`voiceInputController.js` 的 `alloy`→`material` 改名、重新部署
+
+**執行方式**:延續 [[feedback-codex-delegation-workflow]]——每個 task 派給 Codex 寫,Claude Code 審查後補 commit(Codex 在這個環境沒有 `.git` 寫入權限)。
+
+**下一步(下次對話從這裡接續)**:直接開始跑「核心計算 + 畫面」計畫的 Task 1(`materials.js` 重構)。使用者昨天(2026-08-24)在 Task 1 剛要派給 Codex 時暫停,說要休息,**還沒有任何 task 被執行**,計畫文件跟規格都已經定案不用重新討論。
+
 ## 溝通注意事項
 
 - **一律用繁體中文回覆**,包括工具/框架帶出來的英文樣板文字也要翻譯
