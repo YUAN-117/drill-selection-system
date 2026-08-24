@@ -355,3 +355,24 @@ footer.note {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+.voice-input-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.login-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+#voiceStatus.voice-status-error {
+  color: var(--danger);
+}

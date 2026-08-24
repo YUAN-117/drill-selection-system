@@ -24,6 +24,15 @@
   </header>
 
   <section class="panel" aria-label="輸入與比較結果">
+    <div class="voice-input-bar">
+      <div class="login-status">
+        <span id="loginStatus">檢查登入狀態...</span>
+        <button class="btn-ghost" id="loginBtn" type="button">使用 Google 登入</button>
+      </div>
+      <button class="btn-primary" id="micBtn" type="button">🎤 語音輸入</button>
+    </div>
+    <div class="hint" id="voiceStatus">&nbsp;</div>
+
     <div class="field-grid">
       <div class="field">
         <label for="diameter">鑽頭直徑 (mm)</label>
@@ -73,5 +82,6 @@
 </div>
 
 <script type="module" src="assets/ui/toolController.js"></script>
+<script type="module" src="assets/ui/voiceInputController.js"></script>
 </body>
 </html>
