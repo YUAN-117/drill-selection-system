@@ -28,48 +28,16 @@
   - 架構文件:[`docs/superpowers/specs/2026-08-22-drill-selection-website-design.md`](docs/superpowers/specs/2026-08-22-drill-selection-website-design.md)
   - 實作計畫(已全部執行完成、通過測試與最終審查):[`docs/superpowers/plans/2026-08-22-drill-selection-website.md`](docs/superpowers/plans/2026-08-22-drill-selection-website.md)
   - 程式碼分層:`assets/core/`(純計算邏輯,有 Node 單元測試)、`assets/data/`(localStorage 存取)、`assets/ui/`(畫面渲染 + DOM 操作分開)
-  - 跑測試:`npm test`(24 個測試,應該全過)
+  - 跑測試:`npm test`(60 個測試,應該全過)
   - **這部分已經完成,不需要再改動**,除非使用者明確要求
 
-## 現在要做的:AI 語音輸入 + Google 登入功能(進行中,還沒開始寫程式)
-
-**規格文件已經寫好、已 commit**,完整細節都在這裡,請先讀過:
-[`docs/superpowers/specs/2026-08-22-ai-voice-input-login-design.md`](docs/superpowers/specs/2026-08-22-ai-voice-input-login-design.md)
-
-規格重點(不要重新設計,已跟使用者確認過):
-- 只做 **Google 登入**(不做信箱註冊),用 **Supabase Auth**
-- 後端用 **Supabase**(Auth + Edge Function),前端維持純靜態不變
-- AI 用 **Anthropic Claude Haiku**,單次獨立解析語音文字成 `{ diameter, alloy }`,不需要多輪對話記憶
-- 防濫用:每帳號**每小時 15 次**請求上限、單次輸入文字**不超過 100 字**、AI 回覆要設 `max_tokens` 限制長度
-- 語音輸入紀錄(最近 20 筆)存在瀏覽器 **localStorage**,跟現有 `assets/data/historyStore.js` 同樣的依賴注入 `storage` 參數寫法
-- **只有 AI 語音輸入這個功能需要登入**,現有計算器與歷史紀錄頁維持免登入、不要改動
-- 解析失敗時**整欄不填**,顯示錯誤訊息要求使用者重講一次,不要做部分猜測填入
-- 這次**不做付費機制**,只用次數上限防濫用
-
-### 外部帳號設定進度(這些不在 git 裡,只能看這份筆記知道)
-
-- ✅ Supabase 帳號 + 專案已建立(專案 URL:`https://eefnzpqveljowridmhto.supabase.co`)
-- ✅ Google Cloud 專案 `drill-selection-system` 已建立
-- ✅ Google OAuth 同意畫面(Google Auth Platform)已設定完成,使用者類型為外部(External)
-- ✅ Google OAuth Client(`drill-selection-system web`,Web application 類型)已建立,redirect URI 已指向 Supabase callback network
-- ✅ Client ID / Client Secret 已貼回 Supabase 的 Google Provider 設定並儲存,「Skip nonce checks」已確認關閉、Google 登入已啟用
-- ✅ Anthropic API 金鑰已申請、帳單/付款方式已設定完成
-- ✅ 金鑰已透過 Supabase 網頁後台設定進 Edge Function 的環境變數(`ANTHROPIC_API_KEY`),沒有出現在程式碼或 git 裡
-
-**外部帳號設定已全部完成,下一步是進入實作規劃階段(見下方接下來的步驟)。**
-
-### 接下來的步驟
-
-1. 照這個專案已經在用的流程繼續:
-   - 用 `superpowers:brainstorming` 或直接確認規格細節都問清楚了(規格文件應該已經足夠完整,可以直接進入下一步)
-   - 用 `superpowers:writing-plans` 把 spec 拆成 TDD 實作計畫,存到 `docs/superpowers/plans/`
-   - 用 `superpowers:subagent-driven-development`(如果工具支援)或一般方式逐步實作、測試、review
-2. 實作範圍大致包含:
-   - `tool.html` 新增麥克風按鈕與登入狀態顯示
-   - 前端新增呼叫瀏覽器語音辨識(Web Speech API)的邏輯
-   - 前端新增呼叫 Supabase Auth(Google 登入)與呼叫 Edge Function 的 `data` 層邏輯
-   - Supabase Edge Function:驗證登入、檢查每小時次數上限、檢查輸入長度、呼叫 Anthropic API、驗證回應格式、回傳結果
-   - 語音輸入紀錄(最近 20 筆)的 localStorage 存取邏輯(仿照 `historyStore.js`)
+- **AI 語音輸入 + Google 登入功能已完成並通過手動端對端測試(2026-08-24)**
+  - 規格:[`docs/superpowers/specs/2026-08-22-ai-voice-input-login-design.md`](docs/superpowers/specs/2026-08-22-ai-voice-input-login-design.md)
+  - 後端實作計畫(已全部完成、已部署上線):[`docs/superpowers/plans/2026-08-23-ai-voice-backend.md`](docs/superpowers/plans/2026-08-23-ai-voice-backend.md) — Supabase Edge Function `parse-drill-voice`,已部署到 `https://eefnzpqveljowridmhto.supabase.co/functions/v1/parse-drill-voice`
+  - 前端實作計畫(已全部完成):[`docs/superpowers/plans/2026-08-23-ai-voice-frontend.md`](docs/superpowers/plans/2026-08-23-ai-voice-frontend.md) — `tool.html` 的麥克風按鈕、登入狀態列、`assets/data/supabaseClient.js`、`voiceParseClient.js`、`voiceHistoryStore.js`、`assets/ui/voiceInputView.js`、`voiceInputController.js`
+  - 已在本機(`http://127.0.0.1:5500`,用 `npx serve`)實測通過:Google 登入、語音辨識成功自動填表、解析失敗不亂填、localStorage 紀錄、每小時 15 次上限擋下第 16 次以後的請求、無痕視窗(未登入)下原有計算器/歷史紀錄功能不受影響
+  - **⚠️ 部署到正式站(GitHub Pages)前還有一件事要做**:Supabase 後台 Authentication → URL Configuration → Redirect URLs 目前只加了本機測試用的 `http://127.0.0.1:5500/**`,**還沒加 `https://yuan-117.github.io/**`**。正式站上線後如果 Google 登入完又跳回首頁、狀態卡在「未登入」,就是這個沒加,回去 Supabase 後台加上去就好(細節寫在前端計畫 Task 1 的 Step 3 那段)。
+  - Anthropic $5 額度用得很省(用 Haiku、每小時 15 次上限),不用特別擔心突然被扣款——因為 Console 裡的自動加值(auto-reload)當時選了 Skip,額度用完就是用完,不會自動扣卡。
 
 ## 溝通注意事項
 
