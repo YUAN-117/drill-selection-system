@@ -22,6 +22,9 @@ function fillFormAndRecompute(diameter, material) {
   materialEl.value = material;
   diameterEl.dispatchEvent(new Event('input', { bubbles: true }));
   materialEl.dispatchEvent(new Event('change', { bubbles: true }));
+  materialEl.classList.remove('voice-filled');
+  void materialEl.offsetWidth;
+  materialEl.classList.add('voice-filled');
 }
 
 async function handleTranscript(transcript, accessToken) {

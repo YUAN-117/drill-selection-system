@@ -180,6 +180,15 @@ header.page p {
   min-height: 14px;
 }
 
+@keyframes voice-filled-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--accent-soft); border-color: var(--border); }
+  30% { box-shadow: 0 0 0 4px var(--accent-soft); border-color: var(--accent); }
+}
+
+.field select.voice-filled {
+  animation: voice-filled-pulse 1.4s ease-out;
+}
+
 .params-line {
   margin-top: 16px;
   padding-top: 14px;
@@ -353,7 +362,7 @@ footer.note {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }
 
 .voice-input-bar {
