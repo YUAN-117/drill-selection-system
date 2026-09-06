@@ -20,7 +20,7 @@
 <div class="wrap">
   <header class="page">
     <h1>鑽頭選擇與計算</h1>
-    <p>輸入鑽頭直徑與鋁合金材質,自動比較三種鑽頭材質的建議轉速與進給量</p>
+    <p>輸入鑽頭直徑、材料材質與鑽頭材質,計算建議轉速與進給量</p>
   </header>
 
   <section class="panel" aria-label="輸入與比較結果">
@@ -41,13 +41,12 @@
         <div class="hint" id="diaHint">&nbsp;</div>
       </div>
       <div class="field">
-        <label for="alloy">鋁合金材質</label>
-        <select id="alloy">
-          <option value="6061">6061</option>
-          <option value="7075">7075</option>
-          <option value="a380">A380 壓鑄鋁</option>
-          <option value="custom">自訂鋁合金</option>
-        </select>
+        <label for="material">材料材質</label>
+        <select id="material"></select>
+      </div>
+      <div class="field">
+        <label for="drillMat">鑽頭材質</label>
+        <select id="drillMat"></select>
       </div>
     </div>
 
@@ -77,7 +76,7 @@
   </section>
 
   <footer class="note">
-    直徑僅接受市售鑽頭常見規格(1.0–13.0mm 每 0.1mm、13.5–20.0mm 每 0.5mm、21–32mm 每 1mm,依 DIN 338 麻花鑽常見尺寸系列),輸入非標準值會自動對應到最接近的規格。Vc、f 為經驗常用範圍,非精確固定值,進給量僅依直徑分段,不因鑽頭材質而異。實際仍應依刀具廠商規格與機台狀況微調。目前不考慮孔深/深徑比、貫穿孔或沉頭孔。記錄僅保存在本機瀏覽器(localStorage)。
+    直徑僅接受市售鑽頭常見規格(1.0–13.0mm 每 0.1mm、13.5–20.0mm 每 0.5mm、21–32mm 每 1mm,依 DIN 338 麻花鑽常見尺寸系列),輸入非標準值會自動對應到最接近的規格。Vc、f 為經驗常用範圍,非精確固定值,標示「⚠ 推估參考」的數值信心度較低,實際仍應依刀具廠商規格與機台狀況微調。進給量依直徑與材料材質分段,鑽頭材質(HSS/硬質合金/塗層硬質合金)只影響建議轉速範圍,不影響進給量。目前不考慮孔深/深徑比、貫穿孔或沉頭孔。記錄僅保存在本機瀏覽器(localStorage)。
   </footer>
 </div>
 
