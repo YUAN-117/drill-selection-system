@@ -92,5 +92,5 @@ Deno.serve(async (req) => {
     return jsonResponse({ ok: false, code: 'PARSE_FAILED' }, 200);
   }
 
-  return jsonResponse({ ok: true, diameter: parsed.diameter, alloy: parsed.alloy }, 200);
+  return jsonResponse({ ok: true, diameter: parsed.diameter, material: parsed.material }, 200);
 });
