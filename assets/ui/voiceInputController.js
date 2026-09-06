@@ -8,7 +8,7 @@ const loginBtn = document.getElementById('loginBtn');
 const loginStatus = document.getElementById('loginStatus');
 const voiceStatus = document.getElementById('voiceStatus');
 const diameterEl = document.getElementById('diameter');
-const alloyEl = document.getElementById('alloy');
+const materialEl = document.getElementById('material');
 
 const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -17,11 +17,11 @@ function setVoiceStatus(text, isError) {
   voiceStatus.classList.toggle('voice-status-error', Boolean(isError));
 }
 
-function fillFormAndRecompute(diameter, alloy) {
+function fillFormAndRecompute(diameter, material) {
   diameterEl.value = diameter;
-  alloyEl.value = alloy;
+  materialEl.value = material;
   diameterEl.dispatchEvent(new Event('input', { bubbles: true }));
-  alloyEl.dispatchEvent(new Event('change', { bubbles: true }));
+  materialEl.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 async function handleTranscript(transcript, accessToken) {
@@ -31,8 +31,8 @@ async function handleTranscript(transcript, accessToken) {
     setVoiceStatus(renderErrorMessage(result.code), true);
     return;
   }
-  fillFormAndRecompute(result.diameter, result.alloy);
-  addVoiceHistoryRecord(localStorage, transcript, result.diameter, result.alloy);
+  fillFormAndRecompute(result.diameter, result.material);
+  addVoiceHistoryRecord(localStorage, transcript, result.diameter, result.material);
   setVoiceStatus('已自動填入 ✓', false);
 }
 
