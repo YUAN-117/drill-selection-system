@@ -1,16 +1,19 @@
 import { STANDARD_SIZES, nearestStandardDiameter } from '../core/diameter.js';
-import { computeAllResults } from '../core/materials.js';
+import { computeResult, DRILL_TOOL_TYPES } from '../core/materials.js';
 import { addHistoryRecord } from '../data/historyStore.js';
 import {
-  EMPTY_COMPARE_ROW,
+  EMPTY_RESULT_ROW,
   GUIDANCE_DEFAULT_TEXT,
-  GUIDANCE_RESULT_HTML,
-  renderCompareRows,
+  renderMaterialOptionsHtml,
+  renderDrillMatOptionsHtml,
+  renderResultRow,
+  renderGuidanceHtml,
   renderDiameterHint
 } from './toolView.js';
 
 const diameterEl = document.getElementById('diameter');
-const alloyEl = document.getElementById('alloy');
+const materialEl = document.getElementById('material');
+const drillMatEl = document.getElementById('drillMat');
 const compareBody = document.getElementById('compareBody');
 const diaHint = document.getElementById('diaHint');
 const guidanceLine = document.getElementById('guidanceLine');
@@ -18,21 +21,34 @@ const addBtn = document.getElementById('addBtn');
 
 let currentComputation = null;
 
+function parseMaterialValue(value) {
+  const [materialKey, subtypeKey] = value.split(':');
+  return { materialKey, subtypeKey };
+}
+
 function renderEmpty() {
-  compareBody.innerHTML = EMPTY_COMPARE_ROW;
+  compareBody.innerHTML = EMPTY_RESULT_ROW;
   diaHint.innerHTML = '&nbsp;';
   guidanceLine.textContent = GUIDANCE_DEFAULT_TEXT;
   addBtn.disabled = true;
   currentComputation = null;
 }
 
-function renderResults(rawDiameter, alloyKey) {
-  const { diameter, results } = computeAllResults(rawDiameter, alloyKey);
-  diaHint.innerHTML = renderDiameterHint(rawDiameter, diameter);
-  compareBody.innerHTML = renderCompareRows(results);
-  guidanceLine.innerHTML = GUIDANCE_RESULT_HTML;
+function refreshDrillMatOptions(materialKey) {
+  const previousValue = drillMatEl.value;
+  drillMatEl.innerHTML = renderDrillMatOptionsHtml(materialKey);
+  if (DRILL_TOOL_TYPES.includes(previousValue)) {
+    drillMatEl.value = previousValue;
+  }
+}
+
+function renderResults(rawDiameter, materialKey, subtypeKey, drillToolType) {
+  const result = computeResult(rawDiameter, materialKey, subtypeKey, drillToolType);
+  diaHint.innerHTML = renderDiameterHint(rawDiameter, result.diameter);
+  compareBody.innerHTML = renderResultRow(result, materialKey);
+  guidanceLine.innerHTML = renderGuidanceHtml(materialKey);
   addBtn.disabled = false;
-  currentComputation = { diameter, alloy: alloyKey, results };
+  currentComputation = { diameter: result.diameter, materialKey, subtypeKey, drillToolType, result };
 }
 
 function recompute() {
@@ -41,7 +57,8 @@ function recompute() {
     renderEmpty();
     return;
   }
-  renderResults(raw, alloyEl.value);
+  const { materialKey, subtypeKey } = parseMaterialValue(materialEl.value);
+  renderResults(raw, materialKey, subtypeKey, drillMatEl.value);
 }
 
 diameterEl.addEventListener('input', recompute);
@@ -49,11 +66,17 @@ diameterEl.addEventListener('blur', () => {
   const raw = parseFloat(diameterEl.value);
   if (raw > 0) diameterEl.value = nearestStandardDiameter(raw);
 });
-alloyEl.addEventListener('change', recompute);
+materialEl.addEventListener('change', () => {
+  const { materialKey } = parseMaterialValue(materialEl.value);
+  refreshDrillMatOptions(materialKey);
+  recompute();
+});
+drillMatEl.addEventListener('change', recompute);
 
 addBtn.addEventListener('click', () => {
   if (!currentComputation) return;
-  addHistoryRecord(localStorage, currentComputation.diameter, currentComputation.alloy, currentComputation.results);
+  const { diameter, materialKey, subtypeKey, drillToolType, result } = currentComputation;
+  addHistoryRecord(localStorage, diameter, materialKey, subtypeKey, drillToolType, result);
   addBtn.textContent = '已加入 ✓';
   setTimeout(() => {
     addBtn.textContent = '加入記錄';
@@ -71,4 +94,6 @@ addBtn.addEventListener('click', () => {
   list.appendChild(frag);
 })();
 
+materialEl.innerHTML = renderMaterialOptionsHtml();
+refreshDrillMatOptions(parseMaterialValue(materialEl.value).materialKey);
 renderEmpty();
