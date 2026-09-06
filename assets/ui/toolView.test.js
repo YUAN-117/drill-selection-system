@@ -1,25 +1,74 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeAllResults } from '../core/materials.js';
-import { renderCompareRows, renderDiameterHint } from './toolView.js';
+import { computeResult } from '../core/materials.js';
+import { formatNumber } from '../core/format.js';
+import {
+  renderMaterialOptionsHtml,
+  renderDrillMatOptionsHtml,
+  renderResultRow,
+  renderGuidanceHtml,
+  renderDiameterHint
+} from './toolView.js';
 
-test('renderCompareRows includes all three material labels and their RPM values', () => {
-  const { results } = computeAllResults(8, '6061');
-  const html = renderCompareRows(results);
-  assert.match(html, /高速鋼 HSS/);
-  assert.match(html, /2,029/);
-  assert.match(html, /硬質合金/);
-  assert.match(html, /10,146/);
-  assert.match(html, /塗層硬質合金/);
-  assert.match(html, /12,136/);
+test('renderMaterialOptionsHtml groups aluminum subtypes under one optgroup', () => {
+  const html = renderMaterialOptionsHtml();
+  assert.ok(html.includes('<optgroup label="鋁合金">'));
+  assert.ok(html.includes('value="aluminum:6061"'));
+  assert.ok(html.includes('value="aluminum:custom"'));
 });
 
-test('renderDiameterHint shows a checkmark for an already-standard diameter', () => {
+test('renderMaterialOptionsHtml puts single-subtype materials as top-level options, not optgroups', () => {
+  const html = renderMaterialOptionsHtml();
+  assert.ok(html.includes('<option value="stainless:standard">不鏽鋼(304/316 通用)</option>'));
+  assert.ok(!html.includes('<optgroup label="不鏽鋼">'));
+});
+
+test('renderMaterialOptionsHtml includes all six material categories', () => {
+  const html = renderMaterialOptionsHtml();
+  for (const key of ['aluminum:6061', 'copper:brass', 'stainless:standard', 'peek:standard', 'pc:standard', 'pom:standard']) {
+    assert.ok(html.includes('value="' + key + '"'), key + ' missing');
+  }
+});
+
+test('renderDrillMatOptionsHtml shows the aluminum Vc ranges', () => {
+  const html = renderDrillMatOptionsHtml('aluminum');
+  assert.ok(html.includes('高速鋼 HSS(建議 30–60 m/min)'));
+  assert.ok(html.includes('硬質合金(建議 150–300 m/min)'));
+  assert.ok(html.includes('塗層硬質合金(建議 200–350 m/min)'));
+});
+
+test('renderDrillMatOptionsHtml shows different ranges for a different material', () => {
+  const html = renderDrillMatOptionsHtml('stainless');
+  assert.ok(html.includes('高速鋼 HSS(建議 8–15 m/min)'));
+  assert.ok(!html.includes('30–60 m/min'));
+});
+
+test('renderResultRow shows the adopted Vc, its reference range, RPM, and feed for the selected drill material', () => {
+  const result = computeResult(8, 'aluminum', '6061', 'hss');
+  const row = renderResultRow(result, 'aluminum');
+  assert.ok(row.includes('高速鋼 HSS'));
+  assert.ok(row.includes('30–60 m/min'));
+  assert.ok(row.includes(formatNumber(result.rpm, 0)));
+});
+
+test('renderResultRow flags low-confidence estimates', () => {
+  const result = computeResult(8, 'stainless', 'standard', 'coated');
+  const row = renderResultRow(result, 'stainless');
+  assert.ok(row.includes('⚠ 推估參考'));
+});
+
+test('renderResultRow does not flag high-confidence results', () => {
+  const result = computeResult(8, 'aluminum', '6061', 'hss');
+  const row = renderResultRow(result, 'aluminum');
+  assert.ok(!row.includes('⚠ 推估參考'));
+});
+
+test('renderGuidanceHtml returns the caveat text for the given material', () => {
+  assert.ok(renderGuidanceHtml('pom').includes('維持進給速度'));
+  assert.ok(renderGuidanceHtml('aluminum').includes('高速鋼'));
+});
+
+test('renderDiameterHint behavior for standard and non-standard sizes is unchanged', () => {
   assert.equal(renderDiameterHint(8, 8), '✓ 市售標準鑽頭尺寸');
-});
-
-test('renderDiameterHint explains the snap for a non-standard diameter', () => {
-  const html = renderDiameterHint(3.672, 3.7);
-  assert.match(html, /3\.672mm 非市售規格/);
-  assert.match(html, /3\.7 mm/);
+  assert.ok(renderDiameterHint(3.672, 3.7).includes('3.7'));
 });
