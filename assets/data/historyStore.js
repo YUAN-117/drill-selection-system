@@ -1,4 +1,4 @@
-import { ALLOY_LABELS } from '../core/materials.js';
+import { WORKPIECE_MATERIALS } from '../core/materials.js';
 
 export const HISTORY_STORAGE_KEY = 'drillSelectionHistory_v1';
 
@@ -23,15 +23,19 @@ function makeRecordId() {
   return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
-export function addHistoryRecord(storage, diameter, alloyKey, results) {
+export function addHistoryRecord(storage, diameter, materialKey, subtypeKey, drillToolType, result) {
   const list = loadHistory(storage);
+  const subtype = WORKPIECE_MATERIALS[materialKey].subtypes[subtypeKey];
   list.unshift({
     id: makeRecordId(),
     timestamp: new Date().toISOString(),
     diameter,
-    alloy: alloyKey,
-    alloyLabel: ALLOY_LABELS[alloyKey],
-    results
+    materialKey,
+    subtypeKey,
+    materialLabel: subtype.label,
+    drillMat: drillToolType,
+    drillMatLabel: result.drillMatLabel,
+    result
   });
   saveHistory(storage, list);
   return list;
