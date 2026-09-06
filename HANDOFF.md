@@ -39,22 +39,16 @@
   - ✅ Supabase 後台 Authentication → URL Configuration → Redirect URLs 已加好 `http://127.0.0.1:5500/**`(本機測試)跟 `https://yuan-117.github.io/**`(正式站),兩個都在清單裡,部署到 GitHub Pages 後 Google 登入不需要再額外設定。
   - Anthropic $5 額度用得很省(用 Haiku、每小時 15 次上限),不用特別擔心突然被扣款——因為 Console 裡的自動加值(auto-reload)當時選了 Skip,額度用完就是用完,不會自動扣卡。
 
-## 進行中:多材料鑽頭選擇擴充(2026-08-24 設計完成,尚未開始實作)
-
-**使用者想擴充的功能:**
-1. 新增「鑽頭材質」下拉選單,使用者自己選一種(不再自動算三種並排比較),選項文字帶建議 Vc 範圍
-2. 「材料材質」從只有鋁合金,擴充成鋁合金/銅合金(黃銅)/不鏽鋼/PEEK/PC/POM 六大類
-
-**規格文件**(已寫好、已 commit、已自我審查修過 3 個問題):
-[`docs/superpowers/specs/2026-08-24-multi-material-drill-selection-design.md`](docs/superpowers/specs/2026-08-24-multi-material-drill-selection-design.md)
-
-**實作計畫**(已寫好、已 commit、已自我審查修過 1 個防呆漏洞,**還沒開始執行任何一個 task**):
-- 核心計算 + 畫面(先做這份):[`docs/superpowers/plans/2026-08-24-multi-material-core-ui.md`](docs/superpowers/plans/2026-08-24-multi-material-core-ui.md)——7 個 task,重寫 `materials.js`、`toolView.js`、`toolController.js`、`tool.html`、`historyStore.js`、`historyView.js`
-- AI 語音輸入擴充(依賴前一份先做完):[`docs/superpowers/plans/2026-08-24-multi-material-voice.md`](docs/superpowers/plans/2026-08-24-multi-material-voice.md)——5 個 task,擴充 `promptBuilder.js`/`parseAiResponse.js` 允許的材料清單、`index.ts`/`voiceInputController.js` 的 `alloy`→`material` 改名、重新部署
-
-**執行方式**:延續 [[feedback-codex-delegation-workflow]]——每個 task 派給 Codex 寫,Claude Code 審查後補 commit(Codex 在這個環境沒有 `.git` 寫入權限)。
-
-**下一步(下次對話從這裡接續)**:直接開始跑「核心計算 + 畫面」計畫的 Task 1(`materials.js` 重構)。使用者昨天(2026-08-24)在 Task 1 剛要派給 Codex 時暫停,說要休息,**還沒有任何 task 被執行**,計畫文件跟規格都已經定案不用重新討論。
+- **多材料鑽頭選擇擴充已完成並上線(2026-09-06)**
+  - 規格:[`docs/superpowers/specs/2026-08-24-multi-material-drill-selection-design.md`](docs/superpowers/specs/2026-08-24-multi-material-drill-selection-design.md)
+  - 核心計算 + 畫面實作計畫(7 個 task,全部完成):[`docs/superpowers/plans/2026-08-24-multi-material-core-ui.md`](docs/superpowers/plans/2026-08-24-multi-material-core-ui.md)——`materials.js`(新 `WORKPIECE_MATERIALS` 資料結構,取代舊的鋁合金專用模型)、`toolView.js`、`toolController.js`、`tool.html`、`historyStore.js`、`historyView.js` 都已改寫,`alloy` 命名全面改成 `material`
+  - AI 語音輸入擴充計畫(5 個 task,全部完成):[`docs/superpowers/plans/2026-08-24-multi-material-voice.md`](docs/superpowers/plans/2026-08-24-multi-material-voice.md)——語音可辨識的材料從 3 種鋁合金擴充成 8 個 `material:subtype` 鍵值,Edge Function `parse-drill-voice` 已重新部署
+  - 「材料材質」現在有六大類(鋁合金 4 子項 + 銅合金/不鏽鋼/PEEK/PC/POM 各 1 子項共 9 個選項),「鑽頭材質」改成使用者自己選一種(不再自動並排比較三種),選單文字會隨材料動態顯示建議 Vc 範圍
+  - 語音填入材料材質後,該欄位會短暫亮一下藍色光暈提示使用者確認(`.voice-filled` CSS 動畫,`assets/ui/voiceInputController.js` + `assets/style.css`)——這是刻意選的輕量方案,**不是**跳確認對話框:討論過要不要加「你是否要輸入 XXX?」的低信心度確認流程,決定不做,理由是 (1) AI 沒辦法可靠地自報信心度、(2) 語音輸入的目標使用者很可能是不熟術語的新手,就算跳出確認他們也不一定判斷得出對錯、(3) 材料材質下拉選單本來就會顯示在畫面上,使用者讀 RPM 之前自然會看到一次,已經是被動的確認點
+  - 全部 89 個自動化測試通過(`npm test`),另外用 Playwright 實際跑過瀏覽器端對端驗證(下拉選單、動態範圍更新、加入/刪除歷史紀錄)
+  - 11 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
+  - **執行方式**:每個 task 派給 Codex 寫,Claude Code 審查後補 commit(Codex 在這個環境沒有 `.git` 寫入權限)。過程中遇到的幾類真實問題(浮點數邊界值測試、RPM 千分位格式跟測試斷言對不上、Codex sandbox 把中文寫成亂碼、模組互相 import 導致暫時性斷鏈、Supabase 專案自動暫停擋部署)都是先判斷是測試/環境問題還是程式邏輯問題,不會盲目照單全收 Codex 的輸出
+  - **目前沒有進行中的下一步**,這個功能已經收尾。之後如果要再擴充材料種類或加新功能,可以從頭走 `superpowers:brainstorming` 重新設計
 
 ## 溝通注意事項
 
