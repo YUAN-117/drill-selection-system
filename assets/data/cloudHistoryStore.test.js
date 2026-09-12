@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadCloudHistory } from './cloudHistoryStore.js';
+import { computeResult } from '../core/materials.js';
+import { loadCloudHistory, addCloudHistoryRecord } from './cloudHistoryStore.js';
 
 function createFakeSupabase({ data, error }) {
   const builder = {
@@ -38,4 +39,38 @@ test('loadCloudHistory maps Supabase rows into record objects', async () => {
 test('loadCloudHistory throws when Supabase returns an error', async () => {
   const supabase = createFakeSupabase({ data: null, error: { message: 'network error' } });
   await assert.rejects(() => loadCloudHistory(supabase, 'user-1'));
+});
+
+test('addCloudHistoryRecord inserts a record shaped like the local store and returns it mapped back', async () => {
+  const result = computeResult(8, 'aluminum', '6061', 'hss');
+  const supabase = createFakeSupabase({
+    data: {
+      id: 12,
+      created_at: '2026-09-12T04:00:00.000Z',
+      record: {
+        diameter: 8,
+        materialKey: 'aluminum',
+        subtypeKey: '6061',
+        materialLabel: '6061',
+        drillMat: 'hss',
+        drillMatLabel: result.drillMatLabel,
+        depth: null,
+        deepHoleWarning: null,
+        result
+      }
+    },
+    error: null
+  });
+  const record = await addCloudHistoryRecord(supabase, 'user-1', 8, 'aluminum', '6061', 'hss', result);
+  assert.equal(record.id, '12');
+  assert.equal(record.materialLabel, '6061');
+  assert.equal(record.drillMat, 'hss');
+  assert.equal(record.depth, null);
+  assert.equal(record.result.rpm, result.rpm);
+});
+
+test('addCloudHistoryRecord throws when Supabase returns an error', async () => {
+  const result = computeResult(8, 'aluminum', '6061', 'hss');
+  const supabase = createFakeSupabase({ data: null, error: { message: 'insert failed' } });
+  await assert.rejects(() => addCloudHistoryRecord(supabase, 'user-1', 8, 'aluminum', '6061', 'hss', result));
 });

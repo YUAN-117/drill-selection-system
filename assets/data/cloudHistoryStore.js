@@ -1,3 +1,5 @@
+import { WORKPIECE_MATERIALS } from '../core/materials.js';
+
 const TABLE = 'drill_history';
 
 function rowToRecord(row) {
@@ -12,4 +14,26 @@ export async function loadCloudHistory(supabase, userId) {
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data.map(rowToRecord);
+}
+
+export async function addCloudHistoryRecord(supabase, userId, diameter, materialKey, subtypeKey, drillToolType, result, depth) {
+  const subtype = WORKPIECE_MATERIALS[materialKey].subtypes[subtypeKey];
+  const record = {
+    diameter,
+    materialKey,
+    subtypeKey,
+    materialLabel: subtype.label,
+    drillMat: drillToolType,
+    drillMatLabel: result.drillMatLabel,
+    depth: depth ?? null,
+    deepHoleWarning: result.deepHoleWarning ?? null,
+    result
+  };
+  const { data, error } = await supabase
+    .from(TABLE)
+    .insert({ user_id: userId, record })
+    .select()
+    .single();
+  if (error) throw error;
+  return rowToRecord(data);
 }
