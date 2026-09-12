@@ -28,6 +28,7 @@
       <div class="login-status">
         <span id="loginStatus">檢查登入狀態...</span>
         <button class="btn-ghost" id="loginBtn" type="button">使用 Google 登入</button>
+        <button class="btn-ghost" id="logoutBtn" type="button" style="display:none;">登出</button>
       </div>
       <button class="btn-primary" id="micBtn" type="button">🎤 語音輸入</button>
     </div>
@@ -102,7 +103,7 @@
   </section>
 
   <footer class="note">
-    直徑僅接受市售鑽頭常見規格(1.0–13.0mm 每 0.1mm、13.5–20.0mm 每 0.5mm、21–32mm 每 1mm,依 DIN 338 麻花鑽常見尺寸系列),輸入非標準值會自動對應到最接近的規格。Vc、f 為經驗常用範圍,非精確固定值,標示「⚠ 推估參考」的數值信心度較低,實際仍應依刀具廠商規格與機台狀況微調。進給量依直徑與材料材質分段,鑽頭材質(HSS/硬質合金/塗層硬質合金)只影響建議轉速範圍,不影響進給量。孔深為選填欄位,深徑比達 3 倍以上會顯示深孔提醒,但不影響 Vc/RPM 計算結果。目前不考慮貫穿孔或沉頭孔。記錄僅保存在本機瀏覽器(localStorage)。
+    直徑僅接受市售鑽頭常見規格(1.0–13.0mm 每 0.1mm、13.5–20.0mm 每 0.5mm、21–32mm 每 1mm,依 DIN 338 麻花鑽常見尺寸系列),輸入非標準值會自動對應到最接近的規格。Vc、f 為經驗常用範圍,非精確固定值,標示「⚠ 推估參考」的數值信心度較低,實際仍應依刀具廠商規格與機台狀況微調。進給量依直徑與材料材質分段,鑽頭材質(HSS/硬質合金/塗層硬質合金)只影響建議轉速範圍,不影響進給量。孔深為選填欄位,深徑比達 3 倍以上會顯示深孔提醒,但不影響 Vc/RPM 計算結果。目前不考慮貫穿孔或沉頭孔。記錄預設僅保存在本機瀏覽器,登入 Google 帳號後會改為同步到雲端。
   </footer>
 </div>
 

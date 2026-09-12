@@ -1,4 +1,4 @@
-import { getSession, signInWithGoogle, onAuthStateChange, supabase } from '../data/supabaseClient.js';
+import { getSession, signInWithGoogle, signOut, onAuthStateChange, supabase } from '../data/supabaseClient.js';
 import { loadRecords, deleteRecord, clearRecords } from '../data/historyGateway.js';
 import { renderHistoryList, LOADING_STATE_HTML, renderLoadErrorHtml } from './historyView.js';
 import { renderLoginStatus } from './voiceInputView.js';
@@ -12,6 +12,7 @@ const historyError = document.getElementById('historyError');
 const historyDesc = document.getElementById('historyDesc');
 const loginBtn = document.getElementById('loginBtn');
 const loginStatus = document.getElementById('loginStatus');
+const logoutBtn = document.getElementById('logoutBtn');
 
 let currentSession = null;
 
@@ -72,11 +73,16 @@ function updateLoginUi(session) {
   const { label, showLoginButton } = renderLoginStatus(session);
   loginStatus.textContent = label;
   loginBtn.style.display = showLoginButton ? '' : 'none';
+  logoutBtn.style.display = showLoginButton ? 'none' : '';
   render();
 }
 
 loginBtn.addEventListener('click', () => {
   signInWithGoogle();
+});
+
+logoutBtn.addEventListener('click', () => {
+  signOut();
 });
 
 onAuthStateChange(updateLoginUi);

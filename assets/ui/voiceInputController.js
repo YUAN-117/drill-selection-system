@@ -1,4 +1,4 @@
-import { getSession, signInWithGoogle, onAuthStateChange } from '../data/supabaseClient.js';
+import { getSession, signInWithGoogle, signOut, onAuthStateChange } from '../data/supabaseClient.js';
 import { parseVoiceInput } from '../data/voiceParseClient.js';
 import { addVoiceHistoryRecord } from '../data/voiceHistoryStore.js';
 import { renderMicButtonLabel, renderErrorMessage, renderLoginStatus } from './voiceInputView.js';
@@ -6,6 +6,7 @@ import { renderMicButtonLabel, renderErrorMessage, renderLoginStatus } from './v
 const micBtn = document.getElementById('micBtn');
 const loginBtn = document.getElementById('loginBtn');
 const loginStatus = document.getElementById('loginStatus');
+const logoutBtn = document.getElementById('logoutBtn');
 const voiceStatus = document.getElementById('voiceStatus');
 const diameterEl = document.getElementById('diameter');
 const materialEl = document.getElementById('material');
@@ -78,6 +79,7 @@ function updateLoginUi(session) {
   const { label, showLoginButton } = renderLoginStatus(session);
   loginStatus.textContent = label;
   loginBtn.style.display = showLoginButton ? '' : 'none';
+  logoutBtn.style.display = showLoginButton ? 'none' : '';
 }
 
 if (!SpeechRecognitionCtor) {
@@ -89,6 +91,10 @@ if (!SpeechRecognitionCtor) {
 
 loginBtn.addEventListener('click', () => {
   signInWithGoogle();
+});
+
+logoutBtn.addEventListener('click', () => {
+  signOut();
 });
 
 onAuthStateChange(updateLoginUi);
