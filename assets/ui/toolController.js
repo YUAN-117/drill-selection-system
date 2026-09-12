@@ -8,15 +8,18 @@ import {
   renderDrillMatOptionsHtml,
   renderResultRow,
   renderGuidanceHtml,
-  renderDiameterHint
+  renderDiameterHint,
+  renderDeepHoleWarningHtml
 } from './toolView.js';
 
 const diameterEl = document.getElementById('diameter');
 const materialEl = document.getElementById('material');
 const drillMatEl = document.getElementById('drillMat');
+const depthEl = document.getElementById('depth');
 const compareBody = document.getElementById('compareBody');
 const diaHint = document.getElementById('diaHint');
 const guidanceLine = document.getElementById('guidanceLine');
+const deepHoleWarningEl = document.getElementById('deepHoleWarning');
 const addBtn = document.getElementById('addBtn');
 
 let currentComputation = null;
@@ -26,10 +29,17 @@ function parseMaterialValue(value) {
   return { materialKey, subtypeKey };
 }
 
+function parseDepthValue() {
+  const raw = parseFloat(depthEl.value);
+  return raw > 0 ? raw : undefined;
+}
+
 function renderEmpty() {
   compareBody.innerHTML = EMPTY_RESULT_ROW;
   diaHint.innerHTML = '&nbsp;';
   guidanceLine.textContent = GUIDANCE_DEFAULT_TEXT;
+  deepHoleWarningEl.hidden = true;
+  deepHoleWarningEl.textContent = '';
   addBtn.disabled = true;
   currentComputation = null;
 }
@@ -42,13 +52,16 @@ function refreshDrillMatOptions(materialKey) {
   }
 }
 
-function renderResults(rawDiameter, materialKey, subtypeKey, drillToolType) {
-  const result = computeResult(rawDiameter, materialKey, subtypeKey, drillToolType);
+function renderResults(rawDiameter, materialKey, subtypeKey, drillToolType, depth) {
+  const result = computeResult(rawDiameter, materialKey, subtypeKey, drillToolType, depth);
   diaHint.innerHTML = renderDiameterHint(rawDiameter, result.diameter);
   compareBody.innerHTML = renderResultRow(result, materialKey);
   guidanceLine.innerHTML = renderGuidanceHtml(materialKey);
+  const warningText = renderDeepHoleWarningHtml(result.deepHoleWarning);
+  deepHoleWarningEl.textContent = warningText;
+  deepHoleWarningEl.hidden = !warningText;
   addBtn.disabled = false;
-  currentComputation = { diameter: result.diameter, materialKey, subtypeKey, drillToolType, result };
+  currentComputation = { diameter: result.diameter, materialKey, subtypeKey, drillToolType, depth: result.depth, result };
 }
 
 function recompute() {
@@ -58,7 +71,7 @@ function recompute() {
     return;
   }
   const { materialKey, subtypeKey } = parseMaterialValue(materialEl.value);
-  renderResults(raw, materialKey, subtypeKey, drillMatEl.value);
+  renderResults(raw, materialKey, subtypeKey, drillMatEl.value, parseDepthValue());
 }
 
 diameterEl.addEventListener('input', recompute);
@@ -72,11 +85,12 @@ materialEl.addEventListener('change', () => {
   recompute();
 });
 drillMatEl.addEventListener('change', recompute);
+depthEl.addEventListener('input', recompute);
 
 addBtn.addEventListener('click', () => {
   if (!currentComputation) return;
-  const { diameter, materialKey, subtypeKey, drillToolType, result } = currentComputation;
-  addHistoryRecord(localStorage, diameter, materialKey, subtypeKey, drillToolType, result);
+  const { diameter, materialKey, subtypeKey, drillToolType, depth, result } = currentComputation;
+  addHistoryRecord(localStorage, diameter, materialKey, subtypeKey, drillToolType, result, depth);
   addBtn.textContent = '已加入 ✓';
   setTimeout(() => {
     addBtn.textContent = '加入記錄';
