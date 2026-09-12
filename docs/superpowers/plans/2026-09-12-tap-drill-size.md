@@ -213,9 +213,28 @@ export const IMPERIAL_THREADS = {
   '1':    { coarse: { tpi: 8,  drillDiameter: 22.23 }, fine: { tpi: 14, drillDiameter: 23.81 } }
 };
 
+// 明確宣告顯示順序，不依賴 Object.keys() 的列舉順序——JS 引擎會把「看起來像陣列
+// 索引的純數字字串」鍵（例如 IMPERIAL_THREADS 裡的 '1'）自動排到所有字串鍵之前，
+// 跟原始碼裡的宣告順序無關，所以順序必須另外用陣列明確維護。
+const METRIC_SIZE_ORDER = [
+  'M2', 'M2.5', 'M3', 'M4', 'M5', 'M6', 'M8', 'M10',
+  'M12', 'M14', 'M16', 'M18', 'M20', 'M22', 'M24'
+];
+
+const IMPERIAL_SIZE_ORDER = [
+  '#4', '#6', '#8', '#10', '#12', '1/4', '5/16', '3/8',
+  '7/16', '1/2', '9/16', '5/8', '3/4', '7/8', '1'
+];
+
 function getTable(system) {
   if (system === 'metric') return METRIC_THREADS;
   if (system === 'imperial') return IMPERIAL_THREADS;
+  throw new Error(`Unknown thread system: ${system}`);
+}
+
+function getSizeOrder(system) {
+  if (system === 'metric') return METRIC_SIZE_ORDER;
+  if (system === 'imperial') return IMPERIAL_SIZE_ORDER;
   throw new Error(`Unknown thread system: ${system}`);
 }
 
@@ -227,7 +246,7 @@ function getEntry(system, nominalSize) {
 }
 
 export function getNominalSizes(system) {
-  return Object.keys(getTable(system));
+  return [...getSizeOrder(system)];
 }
 
 export function hasFineOption(system, nominalSize) {
