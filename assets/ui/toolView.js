@@ -60,3 +60,7 @@ export function renderDiameterHint(rawDiameter, normalizedDiameter) {
   }
   return '⚙ ' + rawDiameter + 'mm 非市售規格,已對應到最接近的 <strong>' + normalizedDiameter + ' mm</strong> 計算';
 }
+
+export function renderDeepHoleWarningHtml(deepHoleWarning) {
+  return deepHoleWarning || '';
+}

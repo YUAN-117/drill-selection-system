@@ -7,7 +7,8 @@ import {
   renderDrillMatOptionsHtml,
   renderResultRow,
   renderGuidanceHtml,
-  renderDiameterHint
+  renderDiameterHint,
+  renderDeepHoleWarningHtml
 } from './toolView.js';
 
 test('renderMaterialOptionsHtml groups aluminum subtypes under one optgroup', () => {
@@ -71,4 +72,12 @@ test('renderGuidanceHtml returns the caveat text for the given material', () => 
 test('renderDiameterHint behavior for standard and non-standard sizes is unchanged', () => {
   assert.equal(renderDiameterHint(8, 8), '✓ 市售標準鑽頭尺寸');
   assert.ok(renderDiameterHint(3.672, 3.7).includes('3.7'));
+});
+
+test('renderDeepHoleWarningHtml returns the warning text when provided', () => {
+  assert.equal(renderDeepHoleWarningHtml('⚠ 深孔警告文字'), '⚠ 深孔警告文字');
+});
+
+test('renderDeepHoleWarningHtml returns an empty string when there is no warning', () => {
+  assert.equal(renderDeepHoleWarningHtml(null), '');
 });
