@@ -127,7 +127,14 @@ export function getFeedBand(diameter, materialKey) {
   return material.feedBands[material.feedBands.length - 1];
 }
 
-export function computeResult(rawDiameter, materialKey, subtypeKey, drillToolType) {
+export function getDeepHoleWarning(depth, diameter) {
+  if (depth == null) return null;
+  const ratio = depth / diameter;
+  if (ratio < 3) return null;
+  return `⚠ 深孔(深徑比約 ${ratio.toFixed(1)} 倍),建議分段進給並適時退屑排屑,避免鑽頭崩刃或孔壁刮傷;鑽孔中途不可長時間停頓進給。`;
+}
+
+export function computeResult(rawDiameter, materialKey, subtypeKey, drillToolType, depth) {
   const diameter = nearestStandardDiameter(rawDiameter);
   const { vc, lowConfidence } = computeVc(materialKey, subtypeKey, drillToolType);
   const band = getFeedBand(diameter, materialKey);
@@ -143,6 +150,8 @@ export function computeResult(rawDiameter, materialKey, subtypeKey, drillToolTyp
     rpm: Math.round(n),
     feedRate: Math.round(feedRate),
     lowConfidence,
-    caveat: getMaterial(materialKey).caveat
+    caveat: getMaterial(materialKey).caveat,
+    depth: depth ?? null,
+    deepHoleWarning: getDeepHoleWarning(depth, diameter)
   };
 }

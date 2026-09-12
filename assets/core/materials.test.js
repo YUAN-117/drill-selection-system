@@ -5,6 +5,7 @@ import {
   DRILL_TOOL_TYPES,
   computeVc,
   getFeedBand,
+  getDeepHoleWarning,
   computeResult
 } from './materials.js';
 
@@ -109,4 +110,47 @@ test('every workpiece material defines all three drill tool Vc ranges, at least 
     assert.ok(material.feedBands.length >= 1, `${key} has no feed bands`);
     assert.ok(typeof material.caveat === 'string' && material.caveat.length > 0, `${key} has no caveat text`);
   }
+});
+
+test('getDeepHoleWarning returns null when depth is not provided', () => {
+  assert.equal(getDeepHoleWarning(undefined, 8), null);
+  assert.equal(getDeepHoleWarning(null, 8), null);
+});
+
+test('getDeepHoleWarning returns null when the depth-to-diameter ratio is below 3', () => {
+  assert.equal(getDeepHoleWarning(23, 8), null);
+});
+
+test('getDeepHoleWarning triggers exactly at a 3x depth-to-diameter ratio and includes the ratio', () => {
+  const warning = getDeepHoleWarning(24, 8);
+  assert.ok(warning);
+  assert.ok(warning.includes('深孔'));
+  assert.ok(warning.includes('3.0'));
+});
+
+test('getDeepHoleWarning triggers for a clearly deep hole and includes the computed ratio', () => {
+  const warning = getDeepHoleWarning(40, 8);
+  assert.ok(warning.includes('5.0'));
+});
+
+test('computeResult without a depth argument behaves exactly as before (backward compatible)', () => {
+  const result = computeResult(8, 'aluminum', '6061', 'hss');
+  assert.equal(result.depth, null);
+  assert.equal(result.deepHoleWarning, null);
+});
+
+test('computeResult with a shallow depth does not trigger a deep-hole warning', () => {
+  const result = computeResult(8, 'aluminum', '6061', 'hss', 10);
+  assert.equal(result.depth, 10);
+  assert.equal(result.deepHoleWarning, null);
+});
+
+test('computeResult with a deep depth triggers a deep-hole warning without changing rpm/vc/feed', () => {
+  const shallow = computeResult(8, 'aluminum', '6061', 'hss');
+  const deep = computeResult(8, 'aluminum', '6061', 'hss', 40);
+  assert.equal(deep.depth, 40);
+  assert.ok(deep.deepHoleWarning);
+  assert.equal(deep.rpm, shallow.rpm);
+  assert.equal(deep.vc, shallow.vc);
+  assert.equal(deep.feedRate, shallow.feedRate);
 });
