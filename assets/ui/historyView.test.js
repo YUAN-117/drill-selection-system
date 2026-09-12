@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeResult } from '../core/materials.js';
 import { formatNumber } from '../core/format.js';
-import { EMPTY_STATE_HTML, renderHistoryRecord, renderHistoryList } from './historyView.js';
+import { EMPTY_STATE_HTML, renderHistoryRecord, renderHistoryList, LOADING_STATE_HTML, renderLoadErrorHtml } from './historyView.js';
 
 function makeRecord(overrides = {}) {
   const result = computeResult(8, 'aluminum', '6061', 'hss');
@@ -116,4 +116,13 @@ test('renderHistoryRecord shows the deep-hole warning line when present', () => 
 test('renderHistoryRecord shows no warning line when deepHoleWarning is absent', () => {
   const html = renderHistoryRecord(makeRecord());
   assert.ok(!html.includes('record-deep-hole-warning'));
+});
+
+test('LOADING_STATE_HTML shows a loading message', () => {
+  assert.ok(LOADING_STATE_HTML.includes('載入中'));
+});
+
+test('renderLoadErrorHtml renders the given error message', () => {
+  const html = renderLoadErrorHtml('無法載入雲端紀錄,請檢查網路連線後重新整理');
+  assert.ok(html.includes('無法載入雲端紀錄,請檢查網路連線後重新整理'));
 });

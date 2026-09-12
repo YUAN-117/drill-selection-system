@@ -3,6 +3,12 @@ import { formatNumber } from '../core/format.js';
 export const EMPTY_STATE_HTML =
   '<div class="empty-state">尚無記錄,到「鑽頭選擇」頁計算後按「加入記錄」即可保存於此</div>';
 
+export const LOADING_STATE_HTML = '<div class="empty-state">載入中...</div>';
+
+export function renderLoadErrorHtml(message) {
+  return '<div class="empty-state">' + message + '</div>';
+}
+
 export function renderHistoryRecord(record) {
   const time = new Date(record.timestamp).toLocaleString('zh-TW');
   const confidenceNote = record.result.lowConfidence ? ' ⚠ 推估參考' : '';
