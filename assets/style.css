@@ -189,6 +189,40 @@ header.page p {
   animation: voice-filled-pulse 1.4s ease-out;
 }
 
+.panel-title {
+  margin: 0 0 14px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tap-fine-toggle {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tap-result {
+  margin-top: 16px;
+  min-height: 20px;
+  background: linear-gradient(160deg, var(--readout-bg), var(--readout-bg-2));
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 14px;
+  color: var(--readout-text);
+}
+
+.tap-result strong {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.tap-result .tap-caveat {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--readout-text-dim);
+}
+
 .params-line {
   margin-top: 16px;
   padding-top: 14px;

@@ -75,6 +75,27 @@
     </div>
   </section>
 
+  <section class="panel" aria-label="攻牙底孔查詢">
+    <h2 class="panel-title">攻牙底孔查詢</h2>
+    <div class="field-grid">
+      <div class="field">
+        <label for="tapSystem">系統</label>
+        <select id="tapSystem">
+          <option value="metric">公制</option>
+          <option value="imperial">英制</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="tapSize">規格</label>
+        <select id="tapSize"></select>
+      </div>
+    </div>
+    <label class="tap-fine-toggle">
+      <input type="checkbox" id="tapFineToggle"> 這顆是細牙?
+    </label>
+    <div class="tap-result" id="tapResult"></div>
+  </section>
+
   <footer class="note">
     直徑僅接受市售鑽頭常見規格(1.0–13.0mm 每 0.1mm、13.5–20.0mm 每 0.5mm、21–32mm 每 1mm,依 DIN 338 麻花鑽常見尺寸系列),輸入非標準值會自動對應到最接近的規格。Vc、f 為經驗常用範圍,非精確固定值,標示「⚠ 推估參考」的數值信心度較低,實際仍應依刀具廠商規格與機台狀況微調。進給量依直徑與材料材質分段,鑽頭材質(HSS/硬質合金/塗層硬質合金)只影響建議轉速範圍,不影響進給量。目前不考慮孔深/深徑比、貫穿孔或沉頭孔。記錄僅保存在本機瀏覽器(localStorage)。
   </footer>
