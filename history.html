@@ -20,10 +20,17 @@
 <div class="wrap">
   <header class="page">
     <h1>歷史紀錄</h1>
-    <p>只保存在這個瀏覽器裡,換一台電腦或清除瀏覽器資料就看不到了</p>
+    <p id="historyDesc">只保存在這個瀏覽器裡,換一台電腦或清除瀏覽器資料就看不到了</p>
   </header>
 
   <section class="panel" aria-label="歷史紀錄清單">
+    <div class="login-status">
+      <span id="loginStatus">檢查登入狀態...</span>
+      <button class="btn-ghost" id="loginBtn" type="button">使用 Google 登入</button>
+    </div>
+
+    <div class="confirm-bar" id="historyError" style="display:none;"></div>
+
     <div class="confirm-bar" id="confirmBar" style="display:none;">
       確定要清空全部記錄嗎?此操作無法復原。
       <button class="btn-danger-ghost" id="confirmClearBtn">確定清空</button>
