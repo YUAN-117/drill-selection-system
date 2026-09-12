@@ -80,3 +80,28 @@ test('clearHistory empties the stored list', () => {
   clearHistory(storage);
   assert.deepEqual(loadHistory(storage), []);
 });
+
+test('addHistoryRecord stores depth as null when not provided (backward compatible)', () => {
+  const storage = createMemoryStorage();
+  const result = computeResult(8, 'aluminum', '6061', 'hss');
+  const list = addHistoryRecord(storage, 8, 'aluminum', '6061', 'hss', result);
+  assert.equal(list[0].depth, null);
+  assert.equal(list[0].deepHoleWarning, null);
+});
+
+test('addHistoryRecord stores the depth and deep-hole warning when provided', () => {
+  const storage = createMemoryStorage();
+  const result = computeResult(8, 'aluminum', '6061', 'hss', 40);
+  const list = addHistoryRecord(storage, 8, 'aluminum', '6061', 'hss', result, 40);
+  assert.equal(list[0].depth, 40);
+  assert.ok(list[0].deepHoleWarning);
+  assert.ok(list[0].deepHoleWarning.includes('深孔'));
+});
+
+test('addHistoryRecord stores a shallow depth without a deep-hole warning', () => {
+  const storage = createMemoryStorage();
+  const result = computeResult(8, 'aluminum', '6061', 'hss', 10);
+  const list = addHistoryRecord(storage, 8, 'aluminum', '6061', 'hss', result, 10);
+  assert.equal(list[0].depth, 10);
+  assert.equal(list[0].deepHoleWarning, null);
+});

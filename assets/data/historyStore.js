@@ -23,7 +23,7 @@ function makeRecordId() {
   return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
-export function addHistoryRecord(storage, diameter, materialKey, subtypeKey, drillToolType, result) {
+export function addHistoryRecord(storage, diameter, materialKey, subtypeKey, drillToolType, result, depth) {
   const list = loadHistory(storage);
   const subtype = WORKPIECE_MATERIALS[materialKey].subtypes[subtypeKey];
   list.unshift({
@@ -35,6 +35,8 @@ export function addHistoryRecord(storage, diameter, materialKey, subtypeKey, dri
     materialLabel: subtype.label,
     drillMat: drillToolType,
     drillMatLabel: result.drillMatLabel,
+    depth: depth ?? null,
+    deepHoleWarning: result.deepHoleWarning ?? null,
     result
   });
   saveHistory(storage, list);
