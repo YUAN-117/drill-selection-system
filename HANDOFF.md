@@ -58,7 +58,17 @@
   - 遇到一個真的 JS 語言規範問題:物件裡「看起來像陣列索引的純數字字串」鍵(例如英制「1 吋」用 `'1'` 當鍵)會被引擎自動排到 `Object.keys()` 列舉順序的最前面,跟原始碼宣告順序無關——修法是改用明確的順序陣列(`METRIC_SIZE_ORDER`/`IMPERIAL_SIZE_ORDER`),不依賴 `Object.keys()` 的順序
   - 113 個自動化測試通過,Playwright 端對端驗證跑過全部 15+15 個規格組合(粗牙+細牙)
   - 7 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
-  - **下一步(使用者已規劃好順序,尚未開始)**:深孔鑽建議(孔深/深徑比啄鑽退屑提醒)→ 之後才做歷史紀錄雲端同步(刻意排在深孔鑽之後,因為深孔鑽會改動 `computeResult` 的輸出欄位,歷史紀錄的資料庫 schema 最好等這個欄位定案後再設計,不然會改兩次)。深孔鑽這個功能的 brainstorming 還沒開始,下次接續時要先跑 `superpowers:brainstorming` 定案細節(例如深徑比門檻多少算深孔、要不要依材料/鑽頭材質微調)
+  - 之後接續做的下一個功能是「深孔鑽提醒」,見下方。
+
+- **深孔鑽提醒已完成並上線(2026-09-12)**
+  - 規格:[`docs/superpowers/specs/2026-09-12-deep-hole-drilling-design.md`](docs/superpowers/specs/2026-09-12-deep-hole-drilling-design.md)
+  - 實作計畫(7 個 task,全部完成):[`docs/superpowers/plans/2026-09-12-deep-hole-drilling.md`](docs/superpowers/plans/2026-09-12-deep-hole-drilling.md)——`tool.html` 新增選填的「孔深」欄位,`computeResult` 多一個選填的 `depth` 參數(向下相容,不傳就完全跟以前行為一致),深徑比(孔深 ÷ 鑽頭直徑)達 3 倍時顯示深孔警告
+  - 刻意的設計決定:**深孔警告只加文字提醒,不調整 Vc/RPM 計算結果,也不給具體退屑次數/間隔**——因為深孔加工節奏受機台/材料/刀具影響很大,給一個看似精確的通用公式反而是沒有可靠依據的臆測,違反這個專案「不捏造精確數字」的原則
+  - 孔深跟深孔警告文字有一起存進歷史紀錄(`historyStore.js`/`historyView.js` 都更新了);沒填孔深的舊紀錄正常顯示,不受影響
+  - 這次是刻意排在「歷史紀錄雲端同步」之前做的,因為這個功能會改動歷史紀錄的資料形狀,先讓形狀定案,之後設計雲端資料庫 schema 才不用改兩次
+  - 129 個自動化測試通過,Playwright 端對端驗證跑過深徑比門檻邊界(2.875 倍不觸發、3.0/5.0 倍觸發)、RPM 全程不變、歷史紀錄新舊格式並存正常
+  - 8 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
+  - **下一步(使用者已規劃好,尚未開始)**:歷史紀錄雲端同步(把 localStorage 換成/加上 Supabase 資料庫存取,讓歷史紀錄跨裝置同步)。這個功能的 brainstorming 還沒開始,下次接續時要先跑 `superpowers:brainstorming` 定案細節(例如舊的 localStorage 資料要不要遷移、要不要保留本機備援、同步時機是登入時還是即時)
 
 ## 溝通注意事項
 
