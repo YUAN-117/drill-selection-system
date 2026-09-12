@@ -238,6 +238,11 @@ header.page p {
   font-weight: 600;
 }
 
+.params-line.deep-hole-warning {
+  color: var(--danger);
+  border-top-color: var(--danger-soft);
+}
+
 .compare-wrap {
   margin-top: 20px;
   background: linear-gradient(160deg, var(--readout-bg), var(--readout-bg-2));
