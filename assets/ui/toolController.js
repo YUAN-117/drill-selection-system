@@ -1,6 +1,7 @@
 import { STANDARD_SIZES, nearestStandardDiameter } from '../core/diameter.js';
 import { computeResult, DRILL_TOOL_TYPES } from '../core/materials.js';
-import { addHistoryRecord } from '../data/historyStore.js';
+import { getSession, supabase } from '../data/supabaseClient.js';
+import { addRecord } from '../data/historyGateway.js';
 import {
   EMPTY_RESULT_ROW,
   GUIDANCE_DEFAULT_TEXT,
@@ -87,14 +88,23 @@ materialEl.addEventListener('change', () => {
 drillMatEl.addEventListener('change', recompute);
 depthEl.addEventListener('input', recompute);
 
-addBtn.addEventListener('click', () => {
+addBtn.addEventListener('click', async () => {
   if (!currentComputation) return;
   const { diameter, materialKey, subtypeKey, drillToolType, depth, result } = currentComputation;
-  addHistoryRecord(localStorage, diameter, materialKey, subtypeKey, drillToolType, result, depth);
-  addBtn.textContent = '已加入 ✓';
-  setTimeout(() => {
-    addBtn.textContent = '加入記錄';
-  }, 1200);
+  addBtn.disabled = true;
+  addBtn.textContent = '加入中...';
+  try {
+    const session = await getSession();
+    await addRecord(session, localStorage, supabase, diameter, materialKey, subtypeKey, drillToolType, result, depth);
+    addBtn.textContent = '已加入 ✓';
+  } catch {
+    addBtn.textContent = '加入失敗,請重試';
+  } finally {
+    setTimeout(() => {
+      addBtn.textContent = '加入記錄';
+      addBtn.disabled = false;
+    }, 1200);
+  }
 });
 
 (function populateDatalist() {
