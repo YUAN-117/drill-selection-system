@@ -68,7 +68,18 @@
   - 這次是刻意排在「歷史紀錄雲端同步」之前做的,因為這個功能會改動歷史紀錄的資料形狀,先讓形狀定案,之後設計雲端資料庫 schema 才不用改兩次
   - 129 個自動化測試通過,Playwright 端對端驗證跑過深徑比門檻邊界(2.875 倍不觸發、3.0/5.0 倍觸發)、RPM 全程不變、歷史紀錄新舊格式並存正常
   - 8 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
-  - **下一步(使用者已規劃好,尚未開始)**:歷史紀錄雲端同步(把 localStorage 換成/加上 Supabase 資料庫存取,讓歷史紀錄跨裝置同步)。這個功能的 brainstorming 還沒開始,下次接續時要先跑 `superpowers:brainstorming` 定案細節(例如舊的 localStorage 資料要不要遷移、要不要保留本機備援、同步時機是登入時還是即時)
+  - 之後接續做的下一個功能是「歷史紀錄雲端同步」,見下方。
+
+- **歷史紀錄雲端同步已完成並上線(2026-09-12)**
+  - 規格:[`docs/superpowers/specs/2026-09-12-history-cloud-sync-design.md`](docs/superpowers/specs/2026-09-12-history-cloud-sync-design.md)
+  - 實作計畫(9 個 task,全部完成):[`docs/superpowers/plans/2026-09-12-history-cloud-sync.md`](docs/superpowers/plans/2026-09-12-history-cloud-sync.md)——新增 Supabase 資料表 `drill_history`(`supabase/migrations/20260912000000_create_drill_history.sql`,RLS 鎖 `auth.uid() = user_id`,三條 policy 只開 select/insert/delete,沒有 update);新增 `assets/data/cloudHistoryStore.js`(async,呼叫 Supabase)、`assets/data/historyGateway.js`(依登入狀態分流本機/雲端,`historyController.js`/`toolController.js` 都只透過這層呼叫)、`assets/ui/historyView.js` 新增載入中/錯誤狀態渲染
+  - 未登入沿用原本 localStorage 行為完全不受影響;登入後歷史紀錄「完全改用雲端」,不是本機+雲端雙寫,也不會把登入前的本機舊紀錄搬過去(登入後雲端紀錄從空的開始)
+  - 刻意的設計決定:**不設歷史紀錄筆數上限**——新增紀錄只是寫入資料庫,不像語音輸入會呼叫按次計費的外部 AI API,沒有「別人亂用就變成帳單」的急迫性,以 Supabase 本身的資料庫容量上限當最後防線就好
+  - 雲端讀寫失敗(斷網等)一律顯示明確錯誤提示,不假裝成功:歷史紀錄頁載入失敗顯示「無法載入雲端紀錄」、刪除/清空失敗顯示對應錯誤橫幅(沿用既有 `confirm-bar` 樣式)、主計算機頁「加入記錄」按鈕失敗會顯示「加入失敗,請重試」
+  - **驗證時發現一個以前功能遺留的真實 bug 並順手修掉**:`supabaseClient.js` 的 `signOut()` 從最早的語音登入功能開始就存在,但從來沒有任何按鈕接上去過——`tool.html`/`history.html` 都只有登入按鈕、沒有登出按鈕,使用者登入後永遠沒辦法登出或切換帳號。這次補上 `#logoutBtn`(兩個頁面都有,跟登入按鈕互斥顯示),見 commit `936f284`
+  - 147 個自動化測試通過(新增 18 個:`cloudHistoryStore.test.js` 8 個、`historyGateway.test.js` 8 個、`historyView.js` 新增 2 個),Playwright 端對端驗證過本機路徑的完整流程(新增/刪除/清空、跨頁同步、無 JS 錯誤);雲端(登入)路徑因為需要真的 Google 帳號,由使用者手動驗證通過,包含登入後說明文字切換、新增後跨裝置可見、刪除後重新整理仍然消失(確認資料庫真的刪了不是只有畫面上消失)、登出後正確切回本機模式
+  - 12 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
+  - **執行方式**:延續多材料/攻牙底孔/深孔鑽提醒同樣的模式——每個 task 派給 Codex 寫,Claude Code 審查、跑測試、Playwright 驗證後補 commit(Codex 在這個環境沒有 `.git` 寫入權限)。資料庫 migration 用 `npx supabase db push` 部署,需要使用者提供 Supabase Personal Access Token(用完即用,沒有寫進任何檔案或 commit)
 
 ## 溝通注意事項
 
