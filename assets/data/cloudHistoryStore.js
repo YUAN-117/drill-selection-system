@@ -37,3 +37,20 @@ export async function addCloudHistoryRecord(supabase, userId, diameter, material
   if (error) throw error;
   return rowToRecord(data);
 }
+
+export async function deleteCloudHistoryRecord(supabase, userId, id) {
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId);
+  if (error) throw error;
+}
+
+export async function clearCloudHistory(supabase, userId) {
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq('user_id', userId);
+  if (error) throw error;
+}

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeResult } from '../core/materials.js';
-import { loadCloudHistory, addCloudHistoryRecord } from './cloudHistoryStore.js';
+import { loadCloudHistory, addCloudHistoryRecord, deleteCloudHistoryRecord, clearCloudHistory } from './cloudHistoryStore.js';
 
 function createFakeSupabase({ data, error }) {
   const builder = {
@@ -73,4 +73,24 @@ test('addCloudHistoryRecord throws when Supabase returns an error', async () => 
   const result = computeResult(8, 'aluminum', '6061', 'hss');
   const supabase = createFakeSupabase({ data: null, error: { message: 'insert failed' } });
   await assert.rejects(() => addCloudHistoryRecord(supabase, 'user-1', 8, 'aluminum', '6061', 'hss', result));
+});
+
+test('deleteCloudHistoryRecord resolves when Supabase reports no error', async () => {
+  const supabase = createFakeSupabase({ data: null, error: null });
+  await assert.doesNotReject(() => deleteCloudHistoryRecord(supabase, 'user-1', '12'));
+});
+
+test('deleteCloudHistoryRecord throws when Supabase returns an error', async () => {
+  const supabase = createFakeSupabase({ data: null, error: { message: 'delete failed' } });
+  await assert.rejects(() => deleteCloudHistoryRecord(supabase, 'user-1', '12'));
+});
+
+test('clearCloudHistory resolves when Supabase reports no error', async () => {
+  const supabase = createFakeSupabase({ data: null, error: null });
+  await assert.doesNotReject(() => clearCloudHistory(supabase, 'user-1'));
+});
+
+test('clearCloudHistory throws when Supabase returns an error', async () => {
+  const supabase = createFakeSupabase({ data: null, error: { message: 'clear failed' } });
+  await assert.rejects(() => clearCloudHistory(supabase, 'user-1'));
 });
