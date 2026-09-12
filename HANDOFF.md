@@ -48,7 +48,17 @@
   - 全部 89 個自動化測試通過(`npm test`),另外用 Playwright 實際跑過瀏覽器端對端驗證(下拉選單、動態範圍更新、加入/刪除歷史紀錄)
   - 11 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
   - **執行方式**:每個 task 派給 Codex 寫,Claude Code 審查後補 commit(Codex 在這個環境沒有 `.git` 寫入權限)。過程中遇到的幾類真實問題(浮點數邊界值測試、RPM 千分位格式跟測試斷言對不上、Codex sandbox 把中文寫成亂碼、模組互相 import 導致暫時性斷鏈、Supabase 專案自動暫停擋部署)都是先判斷是測試/環境問題還是程式邏輯問題,不會盲目照單全收 Codex 的輸出
-  - **目前沒有進行中的下一步**,這個功能已經收尾。之後如果要再擴充材料種類或加新功能,可以從頭走 `superpowers:brainstorming` 重新設計
+  - 之後接續做的下一個功能是「攻牙底孔查詢」,見下方。
+
+- **攻牙底孔查詢已完成並上線(2026-09-12)**
+  - 規格:[`docs/superpowers/specs/2026-09-12-tap-drill-size-design.md`](docs/superpowers/specs/2026-09-12-tap-drill-size-design.md)
+  - 實作計畫(5 個 task,全部完成):[`docs/superpowers/plans/2026-09-12-tap-drill-size.md`](docs/superpowers/plans/2026-09-12-tap-drill-size.md)——新增 `assets/core/tapDrill.js`(公制 15 個、英制 15 個規格的標準攻牙底孔對照表)、`assets/ui/tapDrillView.js`、`assets/ui/tapDrillController.js`,`tool.html` 底孔查詢卡片獨立於現有計算機,不共用 state、不整合進歷史紀錄
+  - 使用者不用先搞懂「粗牙/細牙」術語:規格選單直接列出公稱直徑(M6、1/4"...),預設用最常見的粗牙/UNC,「這顆是細牙?」核取方塊才切換成細牙/UNF
+  - 資料是實作計畫階段透過研究 agent 查證、交叉比對多個獨立來源(Wikipedia ISO 262/Unified Thread Standard、AmesWeb、ETSU 機工對照表等)得出的,不是憑印象填的數字;過程中研究 agent 還抓到並修正了一個來源網站(RF Cafe)M22/M24 列錯位的錯誤
+  - 遇到一個真的 JS 語言規範問題:物件裡「看起來像陣列索引的純數字字串」鍵(例如英制「1 吋」用 `'1'` 當鍵)會被引擎自動排到 `Object.keys()` 列舉順序的最前面,跟原始碼宣告順序無關——修法是改用明確的順序陣列(`METRIC_SIZE_ORDER`/`IMPERIAL_SIZE_ORDER`),不依賴 `Object.keys()` 的順序
+  - 113 個自動化測試通過,Playwright 端對端驗證跑過全部 15+15 個規格組合(粗牙+細牙)
+  - 7 個 commit 已 push 到 `origin/master`,GitHub Pages 正式站已更新
+  - **下一步(使用者已規劃好順序,尚未開始)**:深孔鑽建議(孔深/深徑比啄鑽退屑提醒)→ 之後才做歷史紀錄雲端同步(刻意排在深孔鑽之後,因為深孔鑽會改動 `computeResult` 的輸出欄位,歷史紀錄的資料庫 schema 最好等這個欄位定案後再設計,不然會改兩次)。深孔鑽這個功能的 brainstorming 還沒開始,下次接續時要先跑 `superpowers:brainstorming` 定案細節(例如深徑比門檻多少算深孔、要不要依材料/鑽頭材質微調)
 
 ## 溝通注意事項
 
