@@ -94,3 +94,26 @@ test('renderHistoryList renders multiple records joined together', () => {
   assert.ok(html.includes('data-id="abc123"'));
   assert.ok(html.includes('data-id="def456"'));
 });
+
+test('renderHistoryRecord shows the depth in the title when present', () => {
+  const record = makeRecord({ depth: 40 });
+  const html = renderHistoryRecord(record);
+  assert.ok(html.includes('8mm(孔深 40mm) · 6061'));
+});
+
+test('renderHistoryRecord does not show a depth note when depth is absent', () => {
+  const html = renderHistoryRecord(makeRecord());
+  assert.ok(html.includes('8mm · 6061'));
+  assert.ok(!html.includes('孔深'));
+});
+
+test('renderHistoryRecord shows the deep-hole warning line when present', () => {
+  const record = makeRecord({ depth: 40, deepHoleWarning: '⚠ 深孔警告文字' });
+  const html = renderHistoryRecord(record);
+  assert.ok(html.includes('⚠ 深孔警告文字'));
+});
+
+test('renderHistoryRecord shows no warning line when deepHoleWarning is absent', () => {
+  const html = renderHistoryRecord(makeRecord());
+  assert.ok(!html.includes('record-deep-hole-warning'));
+});

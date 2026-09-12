@@ -6,10 +6,14 @@ export const EMPTY_STATE_HTML =
 export function renderHistoryRecord(record) {
   const time = new Date(record.timestamp).toLocaleString('zh-TW');
   const confidenceNote = record.result.lowConfidence ? ' ⚠ 推估參考' : '';
+  const depthNote = record.depth ? '(孔深 ' + record.depth + 'mm)' : '';
+  const deepHoleWarningLine = record.deepHoleWarning
+    ? '<div class="record-deep-hole-warning">' + record.deepHoleWarning + '</div>'
+    : '';
   return (
     '<div class="history-record">' +
     '<div class="record-head">' +
-    '<span class="record-title">' + record.diameter + 'mm · ' + record.materialLabel + '</span>' +
+    '<span class="record-title">' + record.diameter + 'mm' + depthNote + ' · ' + record.materialLabel + '</span>' +
     '<span class="record-time">' + time + '</span>' +
     '<button class="del-btn btn-ghost" data-id="' + record.id + '">刪除</button>' +
     '</div>' +
@@ -20,6 +24,7 @@ export function renderHistoryRecord(record) {
     '<td>' + formatNumber(record.result.f, 3) + ' mm/rev · ' + formatNumber(record.result.feedRate, 0) + ' mm/min</td>' +
     '</tr>' +
     '</tbody></table>' +
+    deepHoleWarningLine +
     '</div>'
   );
 }
